@@ -1,6 +1,6 @@
 from .base import Base
 from .utilisateur import Utilisateur
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -14,7 +14,7 @@ class Critique(Base):
     utilisateur: Mapped["Utilisateur"] = relationship(back_populates="critiques")
     metrage: Mapped["Metrage"] = relationship(back_populates="critiques")
     note: Mapped[int]
-    commentaire: Mapped[str] = mapped_column(String(500))
+    commentaire: Mapped[Text] = mapped_column(Text)
 
     def __repr__(self):
         return f"Critique(id={self.id}, utilisateur={self.utilisateur}, metrage={self.metrage}, note={self.note}, commentaire={self.commentaire})"

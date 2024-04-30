@@ -22,7 +22,7 @@ personnes: dict[int, Personne] = {}
 
 
 def get_metrages(tmdb: TMDB):
-    total_pages = 10 
+    total_pages = 4     #max_page=500
     i = 0
     while i < total_pages:
         popular_movies = tmdb.list_popular_movies()
@@ -97,12 +97,24 @@ def get_credits(tmdb: TMDB, metrage: Metrage):
 
     return credits
 
-
+def get_genres(tmdb: TMDB, metrage: Metrage):
+    print(f"Getting genres for {metrage.titre}")
+    movies_details = tmdb.get_movie(metrage.id)
+    genres: list[Genre] = []
+    for detail in movies_details["genres"]:
+        genre = Genre(
+            id=detail("id"),
+            id_metrage=metrage.id,
+            nom_genre=detail("name"),
+            metrage=metrage,
+        )
+        genres.append(genre)
 
 def main():
     load_dotenv()
 
-    engine = create_engine("sqlite:///movies.db", echo=True)
+    engine = create_engine("mysql+mysqldb://" + os.environ.get("TMDB_DB_USER", "") + ":" + os.environ.get("TMDB_DB_PASSWORD","") + "@localhost/MovieDb", echo=True)
+
     tmdb = TMDB(os.environ.get("TMDB_API_KEY", ""))
 
     Base.metadata.create_all(engine)

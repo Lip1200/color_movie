@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String
+from sqlalchemy import String, Text
 from typing import Optional
 from .credit import Credit
 from .base import Base
@@ -21,7 +21,7 @@ class Metrage(Base):
     )
     genres: Mapped[list["Genre"]] = relationship(back_populates="metrage", cascade="all, delete-orphan")
     # note_moyenne: Mapped[float]
-    synopsis: Mapped[Optional[str]] = mapped_column(String(500))
+    synopsis: Mapped[Optional[Text]] = mapped_column(Text)
 
     def __repr__(self):
         return f"Metrage(id={self.id}, titre={self.titre}, annee={self.annee}, type={self.type})"
