@@ -66,7 +66,7 @@ class TMDB:
             "accept": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
-        response = requests.get(url, params=params, headers=headers)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
 
         if not response.ok:
             response.raise_for_status()

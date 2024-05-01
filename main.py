@@ -19,24 +19,26 @@ from src.models.local import (
 )
 
 personnes: dict[int, Personne] = {}
+genres: dict[int, Genre] = {}
+metrages: dict[int, Metrage] = {}
 
 
-def get_metrages(tmdb: TMDB):
-    total_pages = 4     #max_page=500
-    i = 0
-    while i < total_pages:
-        popular_movies = tmdb.list_popular_movies()
-        total_pages = popular_movies["total_pages"]
-
-        for movie in popular_movies["results"]:
+def get_metrages(tmdb: TMDB, page=1):
+    top_rated_movies = tmdb.list_top_rated_movies(page=page)
+    for movie in top_rated_movies["results"]:
+        metrage_id = movie["id"]
+        if metrage_id not in metrages:
             metrage = Metrage(
                 id=movie["id"],
                 titre=movie["title"],
                 annee=date.fromisoformat(movie["release_date"]).year,
                 type="film",
             )
+            metrages[metrage_id] = metrage
             metrage.credits = get_credits(tmdb, metrage)
-            yield metrage
+            metrage.genres = get_genres(tmdb, metrage)
+        metrage = metrages[metrage_id]
+        yield metrage
 
 
 def get_personne(tmdb: TMDB, personne_id: int):
@@ -100,30 +102,45 @@ def get_credits(tmdb: TMDB, metrage: Metrage):
 def get_genres(tmdb: TMDB, metrage: Metrage):
     print(f"Getting genres for {metrage.titre}")
     movies_details = tmdb.get_movie(metrage.id)
-    genres: list[Genre] = []
+    genres_list: list[Genre] = []
     for detail in movies_details["genres"]:
-        genre = Genre(
-            id=detail("id"),
-            id_metrage=metrage.id,
-            nom_genre=detail("name"),
-            metrage=metrage,
-        )
-        genres.append(genre)
+        genre_id = detail["id"]
+        if genre_id not in genres:
+            genre = Genre(
+                id=genre_id,
+                id_metrage=metrage.id,
+                nom_genre=detail["name"],
+                metrage=metrage,
+            )
+            genres[genre_id] = genre
+        genres_list.append(genres[genre_id])
+    return genres_list
+
+
+def initialize_metrages_cache(session):
+    all_metrages = session.query(Metrage).all()
+    for metrage in all_metrages:
+        metrages[metrage.id] = metrage
+
 
 def main():
     load_dotenv()
 
-    engine = create_engine("mysql+mysqldb://" + os.environ.get("TMDB_DB_USER", "") + ":" + os.environ.get("TMDB_DB_PASSWORD","") + "@localhost/MovieDb", echo=True)
-
+    #engine = create_engine("mysql+mysqldb://" + os.environ.get("TMDB_DB_USER", "") + ":" + os.environ.get("TMDB_DB_PASSWORD","") + "@localhost/MovieDb", echo=True)
+    engine = create_engine('sqlite:///Movie.db')
     tmdb = TMDB(os.environ.get("TMDB_API_KEY", ""))
 
     Base.metadata.create_all(engine)
 
     with Session(engine) as session:
-        for metrage in get_metrages(tmdb):
-            if session.query(Metrage.id).filter_by(id=metrage.id).scalar() is None:
+       initialize_metrages_cache(session)
+       total_pages =   # max_page=500
+       i = 1
+       while i <= total_pages:
+           for metrage in get_metrages(tmdb, page=i):
                 session.add(metrage)
                 session.commit()
+       i += 1
 
 
 if __name__ == "__main__":
