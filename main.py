@@ -33,6 +33,8 @@ def get_metrages(tmdb: TMDB, page=1):
                 titre=movie["title"],
                 annee=date.fromisoformat(movie["release_date"]).year,
                 type="film",
+                synopsis=movie["overview"],
+                note_moyenne=movie["vote_average"]
             )
             metrages[metrage_id] = metrage
             metrage.credits = get_credits(tmdb, metrage)
@@ -126,21 +128,19 @@ def initialize_metrages_cache(session):
 def main():
     load_dotenv()
 
-    #engine = create_engine("mysql+mysqldb://" + os.environ.get("TMDB_DB_USER", "") + ":" + os.environ.get("TMDB_DB_PASSWORD","") + "@localhost/MovieDb", echo=True)
-    engine = create_engine('sqlite:///Movie.db')
+    engine = create_engine("mysql+mysqldb://" + os.environ.get("TMDB_DB_USER", "") + ":" + os.environ.get("TMDB_DB_PASSWORD","") + "@localhost/MovieDb", echo=True)
+    #engine = create_engine('sqlite:///Movie.db')
     tmdb = TMDB(os.environ.get("TMDB_API_KEY", ""))
 
     Base.metadata.create_all(engine)
 
     with Session(engine) as session:
        initialize_metrages_cache(session)
-       total_pages =   # max_page=500
-       i = 1
-       while i <= total_pages:
+       total_pages = 2  # max_page=500
+       for i in range(1, total_pages+1):
            for metrage in get_metrages(tmdb, page=i):
-                session.add(metrage)
-                session.commit()
-       i += 1
+                session.merge(metrage)
+           session.commit()
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ class Metrage(Base):
     titre: Mapped[str] = mapped_column(String(50))
     annee: Mapped[int]
     type: Mapped[str] = mapped_column(String(10))
+    synopsis: Mapped[Optional[Text]] = mapped_column(Text)
     credits: Mapped[list["Credit"]] = relationship(
         back_populates="metrage", cascade="all, delete-orphan"
     )
@@ -20,8 +21,8 @@ class Metrage(Base):
         back_populates="metrage", cascade="all, delete-orphan"
     )
     genres: Mapped[list["Genre"]] = relationship(back_populates="metrage", cascade="all, delete-orphan")
-    # note_moyenne: Mapped[float]
-    synopsis: Mapped[Optional[Text]] = mapped_column(Text)
+    note_moyenne: Mapped[float]
+
 
     def __repr__(self):
         return f"Metrage(id={self.id}, titre={self.titre}, annee={self.annee}, type={self.type})"
