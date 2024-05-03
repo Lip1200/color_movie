@@ -15,7 +15,8 @@ from src.models.local import (
     Personne,
     Utilisateur,
     EntreeListe,
-    Genre
+    Genre,
+    metrage_genre_association
 )
 
 personnes: dict[int, Personne] = {}
@@ -23,7 +24,7 @@ genres: dict[int, Genre] = {}
 metrages: dict[int, Metrage] = {}
 
 
-def get_metrages(tmdb: TMDB, page=1):
+def get_metrages(tmdb: TMDB, dico_genres: dict, page=1):
     top_rated_movies = tmdb.list_top_rated_movies(page=page)
     for movie in top_rated_movies["results"]:
         metrage_id = movie["id"]
@@ -38,7 +39,7 @@ def get_metrages(tmdb: TMDB, page=1):
             )
             metrages[metrage_id] = metrage
             metrage.credits = get_credits(tmdb, metrage)
-            metrage.genres = get_genres(tmdb, metrage)
+            metrage.genres = get_genres(tmdb, movie, dico_genres)
         metrage = metrages[metrage_id]
         yield metrage
 
@@ -72,7 +73,7 @@ def get_credits(tmdb: TMDB, metrage: Metrage):
     print(f"Getting credits for {metrage.titre}")
     movie_credits = tmdb.get_movies_credits(metrage.id)
     credits: list[Credit] = []
-    max_acteurs = 20
+    max_acteurs = 10
     for cast in movie_credits["cast"]:
         personne = get_personne(tmdb, cast["id"])
         credit = Credit(
@@ -101,22 +102,28 @@ def get_credits(tmdb: TMDB, metrage: Metrage):
 
     return credits
 
-def get_genres(tmdb: TMDB, metrage: Metrage):
-    print(f"Getting genres for {metrage.titre}")
-    movies_details = tmdb.get_movie(metrage.id)
+def get_genres(tmdb: TMDB, movie: dict, dico_genre: dict):
+    print(f"Getting genres for {movie['title']}")
     genres_list: list[Genre] = []
-    for detail in movies_details["genres"]:
-        genre_id = detail["id"]
-        if genre_id not in genres:
-            genre = Genre(
-                id=genre_id,
-                id_metrage=metrage.id,
-                nom_genre=detail["name"],
-                metrage=metrage,
-            )
-            genres[genre_id] = genre
-        genres_list.append(genres[genre_id])
+    for id in movie["genre_ids"]:
+        genre_obj = Genre(
+            id=id,
+            nom_genre=dico_genre[id]
+        )
+        genres_list.append(genre_obj)
     return genres_list
+
+def init_genres(tmdb: TMDB, session: Session):
+    dataframe = tmdb.get_genres()
+    dico_genres = {}
+    for data in dataframe["genres"]:
+        genre = Genre(
+            id=data["id"],
+            nom_genre=data["name"]
+        )
+        session.merge(genre)
+        dico_genres[data["id"]] = data["name"]
+    return dico_genres
 
 
 def initialize_metrages_cache(session):
@@ -136,9 +143,13 @@ def main():
 
     with Session(engine) as session:
        initialize_metrages_cache(session)
-       total_pages = 2  # max_page=500
+       #rempli genres
+       dico_genres = init_genres(tmdb, session)
+       session.commit()
+
+       total_pages = 500  # max_page=500
        for i in range(1, total_pages+1):
-           for metrage in get_metrages(tmdb, page=i):
+           for metrage in get_metrages(tmdb, dico_genres,  page=i):
                 session.merge(metrage)
            session.commit()
 

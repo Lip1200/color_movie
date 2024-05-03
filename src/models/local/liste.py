@@ -16,6 +16,4 @@ class Liste(Base):
     entrees_metrages: Mapped[list[EntreeListe]] = relationship()
 
     def __repr__(self):
-        return (
-            f"Liste(id={self.id}, utilisateur={self.utilisateur}, titre={self.titre})"
-        )
+        return (f"Liste(id={self.id}, utilisateur={self.utilisateur}, titre={self.titre})")

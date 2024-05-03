@@ -30,6 +30,9 @@ class TMDB:
     def get_movies_credits(self, movie_id, language="en-US"):
         return self.__base_request(f"/movie/{movie_id}/credits", {"language": language})
 
+    def get_genres(self, language="en-US"):
+        return self.__base_request(f"/genre/movie/list", {"language": language})
+
     ### TV
 
     def list_popular_tv(self, language="en-US", page=1):
