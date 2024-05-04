@@ -24,7 +24,7 @@ genres: dict[int, Genre] = {}
 metrages: dict[int, Metrage] = {}
 
 
-def get_metrages(tmdb: TMDB, dico_genres: dict, page=1):
+def get_metrages(tmdb: TMDB, dico_genres: dict, page=1) -> Metrage:
     top_rated_movies = tmdb.list_top_rated_movies(page=page)
     for movie in top_rated_movies["results"]:
         metrage_id = movie["id"]
@@ -44,7 +44,7 @@ def get_metrages(tmdb: TMDB, dico_genres: dict, page=1):
         yield metrage
 
 
-def get_personne(tmdb: TMDB, personne_id: int):
+def get_personne(tmdb: TMDB, personne_id: int) -> Personne:
     if personne_id in personnes:
         return personnes[personne_id]
 
@@ -69,7 +69,7 @@ def get_personne(tmdb: TMDB, personne_id: int):
     return personne
 
 
-def get_credits(tmdb: TMDB, metrage: Metrage):
+def get_credits(tmdb: TMDB, metrage: Metrage) ->list[Credit]:
     print(f"Getting credits for {metrage.titre}")
     movie_credits = tmdb.get_movies_credits(metrage.id)
     credits: list[Credit] = []
@@ -102,7 +102,7 @@ def get_credits(tmdb: TMDB, metrage: Metrage):
 
     return credits
 
-def get_genres(tmdb: TMDB, movie: dict, dico_genre: dict):
+def get_genres(tmdb: TMDB, movie: dict, dico_genre: dict) -> list[Genre]:
     print(f"Getting genres for {movie['title']}")
     genres_list: list[Genre] = []
     for id in movie["genre_ids"]:
@@ -113,7 +113,7 @@ def get_genres(tmdb: TMDB, movie: dict, dico_genre: dict):
         genres_list.append(genre_obj)
     return genres_list
 
-def init_genres(tmdb: TMDB, session: Session):
+def init_genres(tmdb: TMDB, session: Session) -> dict:
     dataframe = tmdb.get_genres()
     dico_genres = {}
     for data in dataframe["genres"]:
@@ -126,7 +126,7 @@ def init_genres(tmdb: TMDB, session: Session):
     return dico_genres
 
 
-def initialize_metrages_cache(session):
+def initialize_metrages_cache(session: Session) -> None:
     all_metrages = session.query(Metrage).all()
     for metrage in all_metrages:
         metrages[metrage.id] = metrage
