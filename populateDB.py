@@ -135,7 +135,7 @@ def initialize_metrages_cache(session: Session) -> None:
 def main():
     load_dotenv()
 
-    engine = create_engine("mysql+mysqldb://" + os.environ.get("TMDB_DB_USER", "") + ":" + os.environ.get("TMDB_DB_PASSWORD","") + "@localhost/MovieDb", echo=True)
+    engine = create_engine("mysql+mysqldb://" + os.environ.get("MOVIE_DB_USER", "") + ":" + os.environ.get("MOVIE_DB_PASSWORD","") + "@localhost/MovieDb", echo=True)
     #engine = create_engine('sqlite:///Movie.db')
     tmdb = TMDB(os.environ.get("TMDB_API_KEY", ""))
 

@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 
-def fetch_movie_data(session, url):
+def fetch_movie_data(session, url: str) ->list[str]:
     response = session.get(url)
     print(f"Status Code: {response.status_code}")
     if response.status_code != 200:
@@ -38,7 +38,7 @@ def fetch_movie_data(session, url):
 
     return film_list
 
-def write_to_csv(movie_data, filename):
+def write_to_csv(movie_data: list[str], filename: str) -> None:
     with open(filename, 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow(['Title', 'Director', 'Year'])  # Header
