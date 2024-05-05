@@ -14,5 +14,3 @@ class Genre(Base):
         secondary=metrage_genre_association,
         back_populates='genres'
     )
-
-

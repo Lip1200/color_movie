@@ -1,4 +1,4 @@
-from .base import Base
+from .base import Base, metrage_genre_association, db
 from .critique import Critique
 from .credit import Credit
 from .liste import Liste

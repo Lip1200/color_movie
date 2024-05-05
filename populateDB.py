@@ -9,12 +9,8 @@ from sqlalchemy.orm import Session
 from src.models.local import (
     Base,
     Credit,
-    Critique,
-    Liste,
     Metrage,
     Personne,
-    Utilisateur,
-    EntreeListe,
     Genre,
     metrage_genre_association
 )

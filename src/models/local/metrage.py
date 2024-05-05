@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Text
-from typing import Optional
 from .credit import Credit
 from .base import Base, metrage_genre_association
 from .critique import Critique
