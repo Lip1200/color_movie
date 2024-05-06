@@ -12,7 +12,7 @@ class Liste(Base):
     id_utilisateur: Mapped[int] = mapped_column(ForeignKey("utilisateur.id"))
 
     utilisateur: Mapped[Utilisateur] = relationship(back_populates="listes")
-    titre: Mapped[str] = mapped_column(String(50))
+    nom_liste: Mapped[str] = mapped_column(String(50))
     entrees_metrages: Mapped[list[EntreeListe]] = relationship()
 
     def __repr__(self):
