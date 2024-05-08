@@ -1,0 +1,11 @@
+services:
+
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: movienotes
+      MYSQL_USER: movienotes
+      MYSQL_PASSWORD: filipe
+      MYSQL_RANDOM_ROOT_PASSWORD: '1'
+    # (this is just an example, not intended to be a production configuration)
