@@ -7,12 +7,14 @@ services:
       MYSQL_DATABASE: REDACTED
       MYSQL_USER: REDACTED
       MYSQL_PASSWORD: REDACTED
-      MYSQL_RANDOM_ROOT_PASSWORD: '1'
+      MYSQL_ROOT_PASSWORD: REDACTED
     volumes:
       - ./MovieDb.sql:/docker-entrypoint-initdb.d/MovieDb.sql
       - db:/var/lib/mysql
     ports:
       - "3306:3306"
+    expose:
+      - 3306
 
 volumes:
   db:
