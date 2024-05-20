@@ -4,15 +4,17 @@ services:
     image: mysql
     restart: always
     environment:
-      MYSQL_DATABASE: movienotes
+      MYSQL_DATABASE: MovieDb
       MYSQL_USER: movienotes
       MYSQL_PASSWORD: filipe
-      MYSQL_RANDOM_ROOT_PASSWORD: '1'
+      MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
       - ./MovieDb.sql:/docker-entrypoint-initdb.d/MovieDb.sql
       - db:/var/lib/mysql
     ports:
       - "3306:3306"
+    expose:
+      - 3306
 
 volumes:
   db:
