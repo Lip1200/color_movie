@@ -16,5 +16,18 @@ services:
     expose:
       - 3306
 
+  chromadb:
+    image: chromadb/chroma
+    restart: always
+    environment:
+      CHROMADB_STORAGE_DIR: /vec_data
+    volumes:
+      - chromadb_data:/vec_data
+    ports:
+      - "8000:8000"
+    expose:
+      - 8000
+
 volumes:
   db:
+  chromadb_data:
