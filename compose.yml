@@ -7,7 +7,7 @@ services:
       MYSQL_DATABASE: MovieDb
       MYSQL_USER: movienotes
       MYSQL_PASSWORD: filipe
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: root
     volumes:
       - ./MovieDb.sql:/docker-entrypoint-initdb.d/MovieDb.sql
       - db:/var/lib/mysql
