@@ -67,8 +67,8 @@ padded_multi_hot_genres = np.pad(multi_hot_genres, ((0, 0), (0, target_dim - mul
 print(f"Dimension des vecteurs multi-hot après padding : {padded_multi_hot_genres.shape[1]}")
 
 # Moyenne pondérée pour combiner les vecteurs
-genre_weight = 0.4
-text_weight = 0.6
+genre_weight = 0.7
+text_weight = 0.3
 
 combined_vectors = [(genre_weight * genre_vector + text_weight * text_vector).tolist()
                     for genre_vector, text_vector in zip(padded_multi_hot_genres, text_embeddings)]
