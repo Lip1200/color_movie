@@ -3,6 +3,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.models.local.metrage import Metrage
+from src.models.local.credit import Credit
 from config import Config
 import chromadb
 from sentence_transformers import SentenceTransformer
@@ -23,23 +24,41 @@ mlb = MultiLabelBinarizer()
 genres_list = [[genre.nom_genre for genre in metrage.genres] for metrage in metrages]
 multi_hot_genres = mlb.fit_transform(genres_list).astype(float)
 
-
 # Chargement du modèle d'embedding
 model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
-# Transformation des synopsis et des titres en vecteurs TF-IDF
-corpus = [f"{metrage.titre} {metrage.synopsis}" for metrage in metrages]
+corpus = []
+for metrage in metrages:
+    actors = ", ".join([actor.personne.nom for actor in metrage.credits if actor.fonction == 'Actor'])
+    director = ", ".join([director.personne.nom for director in metrage.credits if director.fonction == 'Director'])
+    average_rating = metrage.note_moyenne if metrage.note_moyenne is not None else 0
+    word_rating = ""
+
+    if average_rating == 0:
+        word_rating= "unknown"
+    if average_rating < 3:
+        word_rating = "very bad"
+    if average_rating < 5:
+        word_rating = "bad"
+    if average_rating < 7:
+        word_rating = "good"
+    if average_rating < 9:
+        word_rating = "great"
+    if average_rating <= 10:
+        word_rating = "excellent"
+
+    corpus.append(f"title: {metrage.titre}\n"
+                  f"synopsis: {metrage.synopsis}\n"
+                  f"actor's list: {actors}\n"
+                  f"director: {director}\n"
+                  f"average rating: {average_rating} : {word_rating} \n")
+
+# Création des embeddings
 text_embeddings = model.encode(corpus)
-
-
-# Transformation des acteurs
-actors_list = [" ".join([actor.personne.nom for actor in metrage.credits]) for metrage in metrages]
-actor_embeddings = model.encode(actors_list)
 
 # Vérification des dimensions
 print(f"Dimension des vecteurs multi-hot : {multi_hot_genres.shape[1]}")
-print(f"Dimension des vecteurs d'embedding pour les synopsys: {text_embeddings.shape[1]}")
-print(f"Dimension des vecteurs des acteurs : {actor_embeddings.shape[1]}")
+print(f"Dimension des vecteurs d'embedding pour les synopsis + acteurs : {text_embeddings.shape[1]}")
 
 # Augmenter la dimension des vecteurs multi-hot pour correspondre aux dimensions des embeddings
 target_dim = text_embeddings.shape[1]
@@ -50,14 +69,10 @@ print(f"Dimension des vecteurs multi-hot après padding : {padded_multi_hot_genr
 
 # Moyenne pondérée pour combiner les vecteurs
 genre_weight = 0.4
-text_weight = 0.4
-actor_weight = 0.2
+text_weight = 0.6
 
-
-combined_vectors = [(genre_weight * genre_vector + text_weight * text_vector + actor_weight * actor_vector).tolist()
-                    for genre_vector, text_vector, actor_vector in zip(padded_multi_hot_genres, text_embeddings, actor_embeddings)]
-
-
+combined_vectors = [(genre_weight * genre_vector + text_weight * text_vector).tolist()
+                    for genre_vector, text_vector in zip(padded_multi_hot_genres, text_embeddings)]
 
 # Création ou récupération de la collection
 collection_name = "movies"
@@ -74,18 +89,17 @@ collection.upsert(
 
 print("Les vecteurs ont été créés et sauvegardés avec succès.")
 
-
 # Interrogation de la collection
 query_texts = ["An epic space adventure"]
 query_embeddings = model.encode(query_texts)
 results = collection.query(
     query_embeddings=query_embeddings.tolist(),
     n_results=5,  # Nombre de résultats à retourner
-    include=["data", "distances"]  # Inclure les ids et distances dans les résultats
+    include=["embeddings", "distances"]  # Inclure les embeddings et distances dans les résultats
 )
 
 # Vérification si les résultats contiennent des documents
-if results['ids'] is not None:
+if 'embeddings' in results and results['embeddings']:
     # Affichage des résultats de la requête
     for idx, result_id in enumerate(results['ids'][0]):
         print(f"ID du Document {idx+1}: {result_id}")
