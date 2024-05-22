@@ -3,7 +3,6 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.models.local.metrage import Metrage
-from src.models.local.credit import Credit
 from config import Config
 import chromadb
 from sentence_transformers import SentenceTransformer
@@ -51,7 +50,7 @@ for metrage in metrages:
                   f"synopsis: {metrage.synopsis}\n"
                   f"actor's list: {actors}\n"
                   f"director: {director}\n"
-                  f"average rating: {average_rating} : {word_rating} \n")
+                  f"average rating: {average_rating} with the score: {word_rating} \n")
 
 # Création des embeddings
 text_embeddings = model.encode(corpus)
