@@ -50,7 +50,7 @@ for metrage in metrages:
                   f"synopsis: {metrage.synopsis}\n"
                   f"actor's list: {actors}\n"
                   f"director: {director}\n"
-                  f"average rating: {average_rating} with the score: {word_rating} \n")
+                  f"average rating: {word_rating} with the score: {average_rating} \n")
 
 # Création des embeddings
 text_embeddings = model.encode(corpus)
@@ -75,15 +75,16 @@ combined_vectors = [(genre_weight * genre_vector + text_weight * text_vector).to
 
 # Création ou récupération de la collection
 collection_name = "movies"
-collection = chroma_client.get_or_create_collection(name=collection_name)
+collection = chroma_client.get_or_create_collection(name=collection_name, metadata={"hnsw:space": "cosine"})
 
 # Préparation des données pour l'ajout
 ids = [str(metrage.id) for metrage in metrages]
+print("nombre d'ids dans la db: " + str(len(ids)))
 
-# Sauvegarde des vecteurs dans ChromaDB (sans documents et métadatas)
+# Sauvegarde des vecteurs dans ChromaDB (sans documents)
 collection.upsert(
     ids=ids,
-    embeddings=combined_vectors
+    embeddings=combined_vectors,
 )
 
 print("Les vecteurs ont été créés et sauvegardés avec succès.")
@@ -94,10 +95,10 @@ query_embeddings = model.encode(query_texts)
 results = collection.query(
     query_embeddings=query_embeddings.tolist(),
     n_results=5,  # Nombre de résultats à retourner
-    include=["embeddings", "distances"]  # Inclure les embeddings et distances dans les résultats
+    include=["embeddings", "distances"]
 )
 
-# Vérification si les résultats contiennent des documents
+# Vérification si les résultats contiennent des embeddings
 if 'embeddings' in results and results['embeddings']:
     # Affichage des résultats de la requête
     for idx, result_id in enumerate(results['ids'][0]):
