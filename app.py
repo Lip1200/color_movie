@@ -19,7 +19,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from func import (
     get_user_ratings,
-    calculate_weighted_average_vectors,
     get_vector,
     get_user_list_ids,
     get_user_details,
