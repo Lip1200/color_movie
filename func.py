@@ -30,6 +30,24 @@ collection = chroma_client.get_or_create_collection(name="movies", metadata={"hn
 all_ids = collection.get(ids=None)["ids"]
 print(f"Total IDs in ChromaDB: {len(all_ids)}")
 
+
+def find_similar_movies_by_vec(query_vector, top_n=5):
+    # Effectue une requête pour trouver les films les plus similaires
+    results = collection.query(
+        query_embeddings=[query_vector],
+        n_results=top_n,
+        include=["embeddings", "distances"]
+    )
+    if not results['ids']:
+        raise ValueError(f"No similar movies found for the given vector.")
+
+    similar_movie_ids = results['ids'][0]
+    similar_movie_distances = results['distances'][0]
+
+    # Retourne les IDs et les distances des films similaires
+    return similar_movie_ids, similar_movie_distances
+
+
 # Fonction pour trouver les films similaires à partir de l'ID du film
 def find_similar_movies_by_id(movie_id, top_n=5):
     # Récupère le vecteur d'embedding du film donné dans ChromaDB
@@ -41,23 +59,15 @@ def find_similar_movies_by_id(movie_id, top_n=5):
 
     # Récupère le vecteur d'embedding du film
     query_vector = result['embeddings'][0]
+    #on transforme en list
+    query_vector = query_vector.tolist()
 
     # Effectue une requête pour trouver les films les plus similaires
-    results = collection.query(
-        query_embeddings=[query_vector],
-        n_results=top_n + 1,
-        include=["embeddings", "distances"]
-    )
-
-    if not results['ids']:
-        raise ValueError(f"No similar movies found for Movie ID {movie_id}.")
-
-    # Filtre le film de requête des résultats
-    similar_movie_ids = [result_id for result_id in results['ids'][0] if result_id != str(movie_id)]
-    similar_movie_distances = [dist for i, dist in enumerate(results['distances'][0]) if results['ids'][0][i] != movie_id]
+    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(query_vector, top_n)
 
     # Retourne les IDs et les distances des films similaires
-    return similar_movie_ids[:top_n], similar_movie_distances[:top_n]
+    return similar_movie_ids, similar_movie_distances
+
 
 
 def find_similar_movies_by_list_id(list_id, top_n=5):
@@ -80,48 +90,31 @@ def find_similar_movies_by_list_id(list_id, top_n=5):
     ratings_dict = {rating.id_metrage: rating.note for rating in user_ratings}
     ratings = np.array([ratings_dict[movie_id] for movie_id in rated_movie_ids if movie_id in ratings_dict])
     print(f"Ratings array: {ratings}")
+    # Divise les notes par 10 pour que la pondération ne change pas le shape
+    ratings = ratings / 10
+    print(f"Normalized ratings array: {ratings}")
 
     chroma_ids = [str(movie_id) for movie_id in rated_movie_ids if movie_id in ratings_dict]
     print(f"ChromaDB IDs to query: {chroma_ids}")
 
-    results = collection.get(ids=chroma_ids)
-    rated_vectors = results.get('embeddings', [])
-    print(f"Rated vectors: {rated_vectors}")
-
-    if not rated_vectors:
-        print("No vectors found for the rated movies.")
-        return [], []
+    rated_vectors = []
+    for movie_id in rated_movie_ids:
+        vector_result = get_vector(movie_id)
+        if vector_result and 'embeddings' in vector_result:
+            rated_vectors.append(np.array(vector_result['embeddings'][0]))
+        else:
+            print(f"No vector found for movie ID {movie_id}")
+            return [], []
 
     weighted_vectors = np.array([rating * vector for rating, vector in zip(ratings, rated_vectors)])
-    average_vector = np.sum(weighted_vectors, axis=0) / np.sum(ratings)
+    average_vector = np.mean(weighted_vectors, axis=0)
     print(f"Average vector: {average_vector}")
 
-    temp_id = "temp_average_vector"
-    collection.upsert(
-        ids=[temp_id],
-        embeddings=[average_vector.tolist()]
-    )
-
-
-    similar_movie_ids, similar_movie_distances = find_similar_movies_by_id(temp_id, top_n)
-
-    collection.delete(ids=[temp_id])
+    # Convertir average_vector en liste
+    average_vector = average_vector.tolist()
+    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(average_vector, top_n)
 
     return similar_movie_ids, similar_movie_distances
-
-
-
-
-# Fonction pour calculer la moyenne pondérée des vecteurs
-def calculate_weighted_average_vectors(user_ratings):
-    rated_movie_ids = [rating.id_metrage for rating in user_ratings]
-    ratings = np.array([rating.note for rating in user_ratings])
-    rated_vectors = get_vectors(rated_movie_ids)
-    weighted_vectors = np.array([rating * vector for rating, vector in zip(ratings, rated_vectors)])
-    average_vector = np.sum(weighted_vectors, axis=0) / np.sum(ratings)
-    return average_vector
-
-
 
 
 # Fonction pour obtenir le vecteur d'un film
