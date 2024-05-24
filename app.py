@@ -82,22 +82,6 @@ def get_user_movies(user_id):
 
     return jsonify(data)
 
-@app.route('/user/<int:user_id>/similar_movies', methods=['GET'])
-def get_similar_movies(user_id):
-    user_ratings = get_user_ratings(user_id)
-    if not user_ratings:
-        return jsonify({"message": "No ratings found for this user."}), 404
-
-    average_vector = calculate_weighted_average_vectors(user_ratings)
-    similar_movie_ids, similar_movie_distances = find_similar_movies(average_vector)
-
-    return jsonify({
-        "user_id": user_id,
-        "similar_movies": [
-            {"movie_id": movie_id, "distance": distance}
-            for movie_id, distance in zip(similar_movie_ids, similar_movie_distances)
-        ]
-    })
 
 @app.route('/list/<int:list_id>/similar_movies', methods=['GET'])
 def get_similar_movies_by_list(list_id):
