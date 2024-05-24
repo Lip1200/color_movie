@@ -60,7 +60,7 @@ def find_similar_movies_by_id(movie_id, top_n=5):
     # Récupère le vecteur d'embedding du film
     query_vector = result['embeddings'][0]
     #on transforme en list
-    query_vector = query_vector.tolist()
+    query_vector = query_vector
 
     # Effectue une requête pour trouver les films les plus similaires
     similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(query_vector, top_n)
@@ -112,9 +112,14 @@ def find_similar_movies_by_list_id(list_id, top_n=5):
 
     # Convertir average_vector en liste
     average_vector = average_vector.tolist()
-    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(average_vector, top_n)
+    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(average_vector, top_n + len(rated_movie_ids))
 
-    return similar_movie_ids, similar_movie_distances
+    # Exclure les films déjà présents dans la liste de favoris
+    filtered_similar_movie_ids = [movie_id for movie_id in similar_movie_ids if int(movie_id) not in rated_movie_ids]
+    filtered_similar_movie_distances = [similar_movie_distances[i] for i in range(len(similar_movie_ids)) if
+                                        int(similar_movie_ids[i]) not in rated_movie_ids]
+
+    return filtered_similar_movie_ids[:top_n], filtered_similar_movie_distances[:top_n]
 
 
 # Fonction pour obtenir le vecteur d'un film
