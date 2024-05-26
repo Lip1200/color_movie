@@ -1,5 +1,6 @@
 import csv
 import os
+from config import Config
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session, joinedload
@@ -9,13 +10,15 @@ from src.models.local import (
     Personne,
     Utilisateur,
     EntreeListe,
-    Credit
+    Credit,
+    Critique  # Ajouté pour insérer les critiques
 )
 
-def read_movies_from_csv(file_path: str) -> list[str]:
+def read_movies_from_csv(file_path: str) -> list[tuple[str, str, int]]:
     with open(file_path, newline='', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
-        return [(row[0], row[1]) for row in reader]
+        next(reader)  # Skip the header row
+        return [(row[0], row[1], int(row[3])) for row in reader]  # Inclure le titre, le réalisateur et la note
 
 def get_movie_id(session: Session, title: str, director_name: str) -> int:
     movie = session.query(Metrage).options(joinedload(Metrage.credits)).join(
@@ -29,41 +32,51 @@ def get_movie_id(session: Session, title: str, director_name: str) -> int:
     ).first()
     return movie.id if movie else None
 
-
-def create_favorite_list(session: Session, user_id: int, movies: list[str]) -> None:
+def create_favorite_list(session: Session, user_id: int, user_name: str, movies: list[tuple[str, str, int]]) -> None:
     user = session.get(Utilisateur, user_id)
     if not user:
         print("User not found")
         return
 
-    new_list = Liste(utilisateur=user, titre="Favorite Movies")
+    # Mettre à jour le nom de l'utilisateur s'il est fourni
+    if user_name:
+        user.nom = user_name
+        session.add(user)
+        session.commit()
+
+    # Vérifiez les noms de colonnes dans le modèle Liste
+    print(f"Liste columns: {Liste.__table__.columns.keys()}")
+
+    new_list = Liste(id_utilisateur=user.id, nom_liste="Favorite Movies")
     session.add(new_list)
     session.commit()
 
-    for title, director in movies:
+    for title, director, rating in movies:
         movie_id = get_movie_id(session, title, director)
         if movie_id:
             entry = EntreeListe(id_liste=new_list.id, id_metrage=movie_id)
             session.add(entry)
+            critique = Critique(id_utilisateur=user_id, id_metrage=movie_id, note=rating, commentaire="")
+            session.add(critique)
         else:
             print(f"Movie '{title}' directed by {director} not found in the database.")
 
     session.commit()
 
-
 def main():
     load_dotenv()
-    engine = create_engine("mysql+mysqldb://" + os.environ.get("MOVIE_DB_USER", "") + ":" + os.environ.get("MOVIE_DB_PASSWORD", "") + "@localhost/MovieDb", echo=True)
+    engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     Session = sessionmaker(engine)
     with Session() as session:
-        user_id = 18  # ids users de 1 à 500
-        file_path = './scraper/18-xavier-dolan.csv'  #
+        user_id = 22  # ids users de 1 à 500
+        user_name = "Jackie Bagarre"  # Nom de l'utilisateur
+        file_path = './scraper/22-fanDeViolence'  #
 
-        # Read movie titles and directors from CSV
+        # Read movie titles, directors, and ratings from CSV
         movies = read_movies_from_csv(file_path)
 
         # Create a favorite list with the movies found in the database
-        create_favorite_list(session, user_id, movies)
+        create_favorite_list(session, user_id, user_name, movies)
 
 if __name__ == "__main__":
     main()
