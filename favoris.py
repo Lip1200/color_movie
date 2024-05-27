@@ -68,9 +68,9 @@ def main():
     engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     Session = sessionmaker(engine)
     with Session() as session:
-        user_id = 22  # ids users de 1 à 500
-        user_name = "Jackie Bagarre"  # Nom de l'utilisateur
-        file_path = './scraper/22-fanDeViolence'  #
+        user_id = 19  # ids users de 1 à 500
+        user_name = "Lois Lane"  # Nom de l'utilisateur
+        file_path = './scraper/19-fanDeSuperHero'  #
 
         # Read movie titles, directors, and ratings from CSV
         movies = read_movies_from_csv(file_path)
