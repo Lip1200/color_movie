@@ -1,37 +1,30 @@
 import numpy as np
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from config import Config
+from sqlalchemy.orm import joinedload
 from src.models.local import (
-    db,
     Credit,
     Critique,
     EntreeListe,
-    Genre,
     Liste,
     Metrage,
-    Personne,
-    Utilisateur,
-    metrage_genre_association
+    Utilisateur
 )
-import chromadb
-from flask import Flask, request, jsonify
+
 
 # Configuration de la base de données MySQL
-engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
-Session = sessionmaker(bind=engine)
-session = Session()
+#engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
+#Session = sessionmaker(bind=engine)
+#session = Session()
 
 # Configuration de ChromaDB
-chroma_client = chromadb.PersistentClient(path="./vec_data")
-collection = chroma_client.get_or_create_collection(name="movies", metadata={"hnsw:space": "cosine"})
+#chroma_client = chromadb.PersistentClient(path="./vec_data")
+#collection = chroma_client.get_or_create_collection(name="movies", metadata={"hnsw:space": "cosine"})
 
 # Obtenir tous les identifiants dans la collection
-all_ids = collection.get(ids=None)["ids"]
-print(f"Total IDs in ChromaDB: {len(all_ids)}")
+#all_ids = collection.get(ids=None)["ids"]
+#print(f"Total IDs in ChromaDB: {len(all_ids)}")
 
 
-def find_similar_movies_by_vec(query_vector, top_n=5):
+def find_similar_movies_by_vec(collection, query_vector, top_n=5):
     # Effectue une requête pour trouver les films les plus similaires
     results = collection.query(
         query_embeddings=[query_vector],
@@ -49,9 +42,9 @@ def find_similar_movies_by_vec(query_vector, top_n=5):
 
 
 # Fonction pour trouver les films similaires à partir de l'ID du film
-def find_similar_movies_by_id(movie_id, top_n=5):
+def find_similar_movies_by_id(collection, movie_id, top_n=5):
     # Récupère le vecteur d'embedding du film donné dans ChromaDB
-    result = get_vector(movie_id)
+    result = get_vector(collection, movie_id)
 
     # Vérifie si le film a été trouvé dans la collection
     if not result or 'embeddings' not in result or not result['embeddings']:
@@ -63,14 +56,14 @@ def find_similar_movies_by_id(movie_id, top_n=5):
     query_vector = query_vector
 
     # Effectue une requête pour trouver les films les plus similaires
-    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(query_vector, top_n)
+    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(collection, query_vector, top_n)
 
     # Retourne les IDs et les distances des films similaires
     return similar_movie_ids, similar_movie_distances
 
 
 
-def find_similar_movies_by_list_id(list_id, top_n=5):
+def find_similar_movies_by_list_id(session, collection, list_id, top_n=5):
     list_entries = session.query(EntreeListe).filter(EntreeListe.id_liste == list_id).all()
 
     if not list_entries:
@@ -99,7 +92,7 @@ def find_similar_movies_by_list_id(list_id, top_n=5):
 
     rated_vectors = []
     for movie_id in rated_movie_ids:
-        vector_result = get_vector(movie_id)
+        vector_result = get_vector(collection, movie_id)
         if vector_result and 'embeddings' in vector_result:
             rated_vectors.append(np.array(vector_result['embeddings'][0]))
         else:
@@ -112,7 +105,7 @@ def find_similar_movies_by_list_id(list_id, top_n=5):
 
     # Convertir average_vector en liste
     average_vector = average_vector.tolist()
-    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(average_vector, top_n + len(rated_movie_ids))
+    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(collection, average_vector, top_n + len(rated_movie_ids))
 
     # Exclure les films déjà présents dans la liste de favoris
     filtered_similar_movie_ids = [movie_id for movie_id in similar_movie_ids if int(movie_id) not in rated_movie_ids]
@@ -123,7 +116,7 @@ def find_similar_movies_by_list_id(list_id, top_n=5):
 
 
 # Fonction pour obtenir le vecteur d'un film
-def get_vector(movie_id):
+def get_vector(collection, movie_id):
     results = collection.get(ids=[str(movie_id)], include=['embeddings'])
     if 'embeddings' in results and results['embeddings']:
         return results
@@ -131,48 +124,74 @@ def get_vector(movie_id):
         return None
 
 # Fonction pour obtenir les critiques d'un utilisateur
-def get_user_ratings(user_id):
-    with Session() as session:
-        user_ratings = session.query(Critique).filter(Critique.id_utilisateur == user_id).all()
+def get_user_ratings(session, user_id):
+    user_ratings = session.query(Critique).filter(Critique.id_utilisateur == user_id).all()
     return user_ratings
 
 # Fonction pour obtenir les IDs des listes d'un utilisateur
-def get_user_list_ids(user_id):
-    with Session() as session:
-        user_lists = session.query(Liste.id).filter(Liste.id_utilisateur == user_id).all()
-        list_ids = [list_id[0] for list_id in user_lists]
-    return list_ids
+def get_user_list_ids(session, user_id):
+    return [list_id[0] for list_id in session.query(Liste.id).filter(Liste.id_utilisateur == user_id).all()]
 
 # Fonction pour obtenir les détails complets d'un utilisateur
-def get_user_details(user_id):
-    with Session() as session:
-        user = session.query(Utilisateur).get(user_id)
-        if not user:
-            return None
+def get_user_details(session, user_id):
+    user = session.query(Utilisateur).get(user_id)
+    if not user:
+        return None
 
-        # Obtenir les listes de l'utilisateur
-        user_lists = session.query(Liste).filter(Liste.id_utilisateur == user_id).all()
+    # Obtenir les listes de l'utilisateur
+    user_lists = session.query(Liste).filter(Liste.id_utilisateur == user_id).all()
 
-        # Préparer les données des listes
-        lists_data = []
-        for lst in user_lists:
-            list_entries = session.query(EntreeListe).filter(EntreeListe.id_liste == lst.id).all()
-            movies = []
-            for entry in list_entries:
-                movie = session.query(Metrage).get(entry.id_metrage)
-                if movie:
-                    movies.append({"movie_id": movie.id, "title": movie.titre})
-            lists_data.append({"list_id": lst.id, "list_name": lst.nom_liste, "movies": movies})
+    # Préparer les données des listes
+    lists_data = []
+    for lst in user_lists:
+        list_entries = session.query(EntreeListe).filter(EntreeListe.id_liste == lst.id).all()
+        movies = []
+        for entry in list_entries:
+            movie = session.query(Metrage).get(entry.id_metrage)
+            if movie:
+                movies.append({"movie_id": movie.id, "title": movie.titre})
+        lists_data.append({"list_id": lst.id, "list_name": lst.nom_liste, "movies": movies})
 
-        # Obtenir les critiques de l'utilisateur
-        user_ratings = session.query(Critique).filter(Critique.id_utilisateur == user_id).all()
-        ratings_data = [{"movie_id": rating.id_metrage, "note": rating.note, "comment": rating.commentaire} for rating in user_ratings]
+    # Obtenir les critiques de l'utilisateur
+    user_ratings = session.query(Critique).filter(Critique.id_utilisateur == user_id).all()
+    ratings_data = [{"movie_id": rating.id_metrage, "note": rating.note, "comment": rating.commentaire} for rating in user_ratings]
 
-        user_data = {
-            "user_id": user.id,
-            "user_name": user.nom,
-            "lists": lists_data,
-            "ratings": ratings_data
-        }
+    user_data = {
+        "user_id": user.id,
+        "user_name": user.nom,
+        "lists": lists_data,
+        "ratings": ratings_data
+    }
 
-        return user_data
+    return user_data
+
+def get_movie_details(session, movie_ids):
+    movies = session.query(Metrage).options(
+        joinedload(Metrage.credits).joinedload(Credit.personne)
+    ).filter(
+        Metrage.id.in_(movie_ids)
+    ).all()
+
+    movie_details = []
+    for movie in movies:
+        directors = [credit.personne.nom for credit in movie.credits if credit.fonction == 'Director']
+        actors = [credit.personne.nom for credit in movie.credits if credit.fonction == 'Actor']
+
+        movie_details.append({
+            "title": movie.titre,
+            "year": movie.annee,
+            "directors": directors,
+            "actors": actors,
+            "synopsis": movie.synopsis
+        })
+
+    return movie_details
+
+def search_movie_by_title(session, title):
+    movies = session.query(Metrage).filter(Metrage.titre.ilike(f"%{title}%")).all()
+    movie_details = []
+    for movie in movies:
+        directors = [credit.personne.nom for credit in movie.credits if credit.fonction == 'Director']
+        actors = [credit.personne.nom for credit in movie.credits if credit.fonction == 'Actor']
+        movie_details.append({"title": movie.titre, "year": movie.annee, "directors": directors, "actors": actors, "synopsis": movie.synopsis})
+    return movie_details

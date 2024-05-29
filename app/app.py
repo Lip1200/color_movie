@@ -23,7 +23,8 @@ from func import (
     get_user_list_ids,
     get_user_details,
     find_similar_movies_by_id,
-    find_similar_movies_by_list_id
+    find_similar_movies_by_list_id,
+    search_movie_by_title
 )
 
 # Configuration de la base de données MySQL
@@ -32,10 +33,10 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 # Configuration de ChromaDB
-chroma_client = chromadb.PersistentClient(path="./vec_data")
+chroma_client = chromadb.PersistentClient(path="../vec_data")
 collection = chroma_client.get_or_create_collection(name="movies", metadata={"hnsw:space": "cosine"})
 
-# Création de l'application Flask
+# Création de l'application app
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -139,4 +140,4 @@ def user_details(user_id):
         return jsonify({"error": "User not found"}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(host="0.0.0.0", debug=True, port=5001)

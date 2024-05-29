@@ -1,5 +1,5 @@
 import random
-from config import Config
+from app.config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.models.local.critique import Critique

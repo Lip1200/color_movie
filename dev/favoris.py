@@ -1,6 +1,5 @@
 import csv
-import os
-from config import Config
+from app.config import Config
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session, joinedload
@@ -70,7 +69,7 @@ def main():
     with Session() as session:
         user_id = 19  # ids users de 1 à 500
         user_name = "Lois Lane"  # Nom de l'utilisateur
-        file_path = './scraper/19-fanDeSuperHero'  #
+        file_path = 'scraper/19-fanDeSuperHero'  #
 
         # Read movie titles, directors, and ratings from CSV
         movies = read_movies_from_csv(file_path)
