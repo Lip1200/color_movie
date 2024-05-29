@@ -28,6 +28,21 @@ services:
     expose:
       - 8000
 
+  flask:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    environment:
+      - FLASK_ENV=development
+      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:REDACTED@db/MovieDb
+    volumes:
+      - ./app:/app
+    ports:
+      - "5001:5001"
+    depends_on:
+      - db
+      - chromadb
+
 volumes:
   db:
   chromadb_data:

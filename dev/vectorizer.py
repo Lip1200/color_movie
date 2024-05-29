@@ -3,7 +3,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.models.local.metrage import Metrage
-from config import Config
+from app.config import Config
 import chromadb
 from sentence_transformers import SentenceTransformer
 
@@ -13,7 +13,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 # Configuration de ChromaDB
-chroma_client = chromadb.PersistentClient(path="./vec_data")
+chroma_client = chromadb.PersistentClient(path="../vec_data")
 
 # Récupération des métrages
 metrages = session.query(Metrage).all()
