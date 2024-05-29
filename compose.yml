@@ -43,6 +43,17 @@ services:
       - db
       - chromadb
 
+  nextjs:
+    build:
+      context: ./interface
+      dockerfile: Dockerfile
+    volumes:
+      - ./interface:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - flask
+
 volumes:
   db:
   chromadb_data:
