@@ -8,7 +8,13 @@ from src.models.local import (
     Metrage,
     Utilisateur
 )
-
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from config import Config
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+    return app
 
 # Configuration de la base de données MySQL
 #engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
@@ -17,7 +23,7 @@ from src.models.local import (
 
 # Configuration de ChromaDB
 #chroma_client = chromadb.PersistentClient(path="./vec_data")
-#collection = chroma_client.get_or_create_collection(name="movies", metadata={"hnsw:space": "cosine"})
+#collection = chroma_client.get_or_create_collection(name="Movie", metadata={"hnsw:space": "cosine"})
 
 # Obtenir tous les identifiants dans la collection
 #all_ids = collection.get(ids=None)["ids"]
@@ -32,7 +38,7 @@ def find_similar_movies_by_vec(collection, query_vector, top_n=5):
         include=["embeddings", "distances"]
     )
     if not results['ids']:
-        raise ValueError(f"No similar movies found for the given vector.")
+        raise ValueError(f"No similar Movie found for the given vector.")
 
     similar_movie_ids = results['ids'][0]
     similar_movie_distances = results['distances'][0]
@@ -52,7 +58,7 @@ def find_similar_movies_by_id(collection, movie_id, top_n=5):
 
     # Récupère le vecteur d'embedding du film
     query_vector = result['embeddings'][0]
-    #on transforme en list
+    #on transforme en Lists
     query_vector = query_vector
 
     # Effectue une requête pour trouver les films les plus similaires
@@ -67,7 +73,7 @@ def find_similar_movies_by_list_id(session, collection, list_id, top_n=5):
     list_entries = session.query(EntreeListe).filter(EntreeListe.id_liste == list_id).all()
 
     if not list_entries:
-        print("No entries found for this list.")
+        print("No entries found for this Lists.")
         return [], []
 
     rated_movie_ids = [entry.id_metrage for entry in list_entries]
@@ -77,7 +83,7 @@ def find_similar_movies_by_list_id(session, collection, list_id, top_n=5):
     print(f"User ratings: {user_ratings}")
 
     if not user_ratings:
-        print("No ratings found for these movies.")
+        print("No ratings found for these Movie.")
         return [], []
 
     ratings_dict = {rating.id_metrage: rating.note for rating in user_ratings}
@@ -150,7 +156,7 @@ def get_user_details(session, user_id):
             movie = session.query(Metrage).get(entry.id_metrage)
             if movie:
                 movies.append({"movie_id": movie.id, "title": movie.titre})
-        lists_data.append({"list_id": lst.id, "list_name": lst.nom_liste, "movies": movies})
+        lists_data.append({"list_id": lst.id, "list_name": lst.nom_liste, "Movie": movies})
 
     # Obtenir les critiques de l'utilisateur
     user_ratings = session.query(Critique).filter(Critique.id_utilisateur == user_id).all()
