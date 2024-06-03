@@ -74,7 +74,7 @@ def main():
         # Read movie titles, directors, and ratings from CSV
         movies = read_movies_from_csv(file_path)
 
-        # Create a favorite list with the movies found in the database
+        # Create a favorite Lists with the Movie found in the database
         create_favorite_list(session, user_id, user_name, movies)
 
 if __name__ == "__main__":

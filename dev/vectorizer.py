@@ -74,7 +74,7 @@ combined_vectors = [(genre_weight * genre_vector + text_weight * text_vector).to
                     for genre_vector, text_vector in zip(padded_multi_hot_genres, text_embeddings)]
 
 # Création ou récupération de la collection
-collection_name = "movies"
+collection_name = "Movie"
 collection = chroma_client.get_or_create_collection(name=collection_name, metadata={"hnsw:space": "cosine"})
 
 # Préparation des données pour l'ajout

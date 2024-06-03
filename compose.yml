@@ -1,4 +1,34 @@
 services:
+  nextjs:
+    build:
+      context: ./interface
+      dockerfile: Dockerfile
+    environment:
+      - API_URL=http://flask:5001
+    volumes:
+      - ./interface:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      - flask
+
+  flask:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - FLASK_ENV=development
+      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:filipe@db/MovieDb
+    volumes:
+      - ./app:/app
+    ports:
+      - "5001:5001"
+    depends_on:
+      - db
+      - chromadb
 
   db:
     image: mysql
@@ -27,32 +57,6 @@ services:
       - "8000:8000"
     expose:
       - 8000
-
-  flask:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-    environment:
-      - FLASK_ENV=development
-      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:filipe@db/MovieDb
-    volumes:
-      - ./app:/app
-    ports:
-      - "5001:5001"
-    depends_on:
-      - db
-      - chromadb
-
-  nextjs:
-    build:
-      context: ./interface
-      dockerfile: Dockerfile
-    volumes:
-      - ./interface:/app
-    ports:
-      - "3000:3000"
-    depends_on:
-      - flask
 
 volumes:
   db:

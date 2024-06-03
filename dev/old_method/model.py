@@ -34,7 +34,7 @@ movies = [
     ("Inception", inception),
 ]
 
-# Sort movies by preference rate
+# Sort Movie by preference rate
 movies.sort(key=lambda x: get_pref_rate(x[1]), reverse=True)
 for movie in movies:
     print(movie[0], movie[1], get_pref_rate(movie[1]))
