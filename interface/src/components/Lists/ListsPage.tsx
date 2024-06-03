@@ -1,6 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+"use client";
+
+import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useRouter } from 'next/router';
+import Cookies from 'js-cookie';
 
 interface Movie {
   id: number;
@@ -26,33 +29,35 @@ const ListsPage = () => {
   const [newListName, setNewListName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUserLists = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5001/user_lists', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setUserLists(response.data);
-      } catch (err) {
-        console.error('Error fetching user lists:', err);
-      }
-    };
-
-    fetchUserLists();
+  const fetchUserLists = useCallback(async () => {
+    try {
+      const token = Cookies.get('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.get(`${apiUrl}/user_lists`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setUserLists(response.data);
+    } catch (err) {
+      console.error('Error fetching user lists:', err);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchUserLists();
+  }, [fetchUserLists]);
 
   const handleCreateList = async () => {
     if (!newListName) {
-      setError('Please provide a Lists name.');
+      setError('Please provide a List name.');
       return;
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5001/lists', { name: newListName }, {
+      const token = Cookies.get('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.post(`${apiUrl}/lists`, { name: newListName }, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -60,7 +65,7 @@ const ListsPage = () => {
       setNewListName('');
       setUserLists([...userLists, response.data.list]);
     } catch (err) {
-      console.error('Error creating Lists:', err);
+      console.error('Error creating List:', err);
     }
   };
 

@@ -16,20 +16,6 @@ def create_app():
     app.config.from_object(Config)
     return app
 
-# Configuration de la base de données MySQL
-#engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
-#Session = sessionmaker(bind=engine)
-#session = Session()
-
-# Configuration de ChromaDB
-#chroma_client = chromadb.PersistentClient(path="./vec_data")
-#collection = chroma_client.get_or_create_collection(name="Movie", metadata={"hnsw:space": "cosine"})
-
-# Obtenir tous les identifiants dans la collection
-#all_ids = collection.get(ids=None)["ids"]
-#print(f"Total IDs in ChromaDB: {len(all_ids)}")
-
-
 def find_similar_movies_by_vec(collection, query_vector, top_n=5):
     # Effectue une requête pour trouver les films les plus similaires
     results = collection.query(
@@ -136,7 +122,7 @@ def get_user_ratings(session, user_id):
 
 # Fonction pour obtenir les IDs des listes d'un utilisateur
 def get_user_list_ids(session, user_id):
-    return [list_id[0] for list_id in session.query(Liste.id).filter(Liste.id_utilisateur == user_id).all()]
+    return session.query(Liste.id, Liste.nom_liste).filter(Liste.id_utilisateur == user_id).all()
 
 # Fonction pour obtenir les détails complets d'un utilisateur
 def get_user_details(session, user_id):

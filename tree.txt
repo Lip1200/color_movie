@@ -18800,7 +18800,7 @@
 │   │   │   ├── _document.tsx
 │   │   │   ├── api
 │   │   │   │   └── api-test.tsx
-│   │   │   └── index.tsx
+│   │   │   └── page.tsx
 │   │   └── styles
 │   │       └── globals.css
 │   ├── tailwind.config.ts
