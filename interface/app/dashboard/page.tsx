@@ -1,7 +1,9 @@
+"use client";
+
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 
 interface Movie {
   id: number;
@@ -15,7 +17,48 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
   const [userName, setUserName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  const fetchUserName = useCallback(async () => {
+    try {
+      const user_id = Cookies.get('user_id');
+      if (!user_id) {
+        setError('Failed to fetch user ID');
+        return;
+      }
+
+      const token = Cookies.get('token');
+      if (!token) {
+        setError('Failed to fetch token');
+        return;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      let res = await axios({
+        url: `${apiUrl}/user/${user_id}/details`,
+        method: 'get',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 8000,
+      });
+
+      if (res.status === 200) {
+        setUserName(res.data.user_name);
+      } else {
+        setError('Failed to fetch user details');
+      }
+
+      return res.data;
+    } catch (err) {
+      console.error('Error fetching user name', err);
+      setError('Failed to fetch user name');
+    }
+  }, []);
 
   useEffect(() => {
     const token = Cookies.get('token');
@@ -24,37 +67,31 @@ const Dashboard = () => {
     } else {
       fetchUserName();
     }
-  }, [router]);
-
-  const fetchUserName = async () => {
-    try {
-      const response = await axios.get('http://localhost:5001/user/details', {
-        headers: {
-          Authorization: `Bearer ${Cookies.get('token')}`,
-        },
-      });
-      setUserName(response.data.name);
-    } catch (error) {
-      console.error('Error fetching user name', error);
-    }
-  };
+  }, [fetchUserName, router]);
 
   const handleSearch = useCallback(async () => {
-    if (searchTerm) {
-      try {
-        const response = await axios.get('http://localhost:5001/search_movies', {
-          headers: {
-            Authorization: `Bearer ${Cookies.get('token')}`,
-            'Cache-Control': 'no-cache',
-          },
-          params: { query: searchTerm },
-        });
-        setSearchResults(response.data);
-      } catch (err) {
-        console.error('Error fetching search results:', err);
-      }
-    } else {
+    if (searchTerm.trim() === '') {
       setSearchResults([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.get(`${apiUrl}/search_movies`, {
+        headers: {
+          Authorization: `Bearer ${Cookies.get('token')}`,
+          'Cache-Control': 'no-cache',
+        },
+        params: { query: searchTerm },
+      });
+      setSearchResults(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching search results:', err);
+      setError('Failed to fetch search results');
+    } finally {
+      setLoading(false);
     }
   }, [searchTerm]);
 
@@ -72,6 +109,7 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     Cookies.remove('token');
+    Cookies.remove('user_id');
     router.push('/login');
   };
 
@@ -99,6 +137,8 @@ const Dashboard = () => {
           className="p-2 border border-gray-300 rounded"
           placeholder="Search movies"
         />
+        {loading && <p>Loading...</p>}
+        {error && <p className="text-red-500">{error}</p>}
         {searchResults.length > 0 && (
           <ul className="border p-2 mt-2">
             {searchResults.map((movie) => (

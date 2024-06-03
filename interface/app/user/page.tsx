@@ -1,7 +1,9 @@
+"use client";
+
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import axios, {AxiosError} from 'axios';
 import Cookies from 'js-cookie';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 
 interface Movie {
   id: number;
@@ -24,18 +26,33 @@ const UserPage = () => {
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
   const [selectedListId, setSelectedListId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const fetchUserLists = useCallback(async () => {
+    const userId = Cookies.get('user_id');
+    if (!userId) {
+      setError('User ID not found');
+      return;
+    }
+
     try {
-      const response = await axios.get('http://localhost:5001/user_lists', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.get(`${apiUrl}/user/${userId}/lists`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
         },
       });
-      setLists(response.data);
-    } catch (error) {
+      const listsData = response.data || [];
+      // Ensure each list has a movies property that is an array
+      const validatedLists = listsData.map((list: any) => ({
+        ...list,
+        movies: Array.isArray(list.movies) ? list.movies : [],
+      }));
+      setLists(validatedLists);
+    } catch (error: any) {
       console.error('Error fetching user lists', error);
+      setError(error.response?.data?.message || 'Failed to fetch user lists.');
     } finally {
       setLoading(false);
     }
@@ -50,29 +67,38 @@ const UserPage = () => {
     }
   }, [router, fetchUserLists]);
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = useCallback(async (query: string) => {
     if (query.trim() === '') {
       setSearchResults([]);
       return;
     }
 
     try {
-      const response = await axios.get('http://localhost:5001/search_movies', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.get(`${apiUrl}/search_movies`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
         },
         params: { query },
       });
-      setSearchResults(response.data);
-    } catch (error) {
-      console.error('Error searching Movie', error);
+      setSearchResults(response.data || []);
+    } catch (error: any) {
+      console.error('Error searching movies', error);
+      setError(error.response?.data?.message || 'Failed to search movies.');
     }
-  };
+  }, []);
 
   const handleCreateList = async () => {
+    const userId = Cookies.get('user_id');
+    if (!userId) {
+      setError('User ID not found');
+      return;
+    }
+
     try {
-      const response = await axios.post(
-        'http://localhost:5001/lists',
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      await axios.post(
+        `${apiUrl}/user/${userId}/lists`,
         { name: newListName },
         {
           headers: {
@@ -82,21 +108,23 @@ const UserPage = () => {
       );
       setNewListName('');
       fetchUserLists(); // Refresh the lists after creating a new one
-      alert('Lists created successfully');
-    } catch (error) {
-      console.error('Error creating Lists', error);
+      alert('List created successfully');
+    } catch (error: any) {
+      console.error('Error creating list', error);
+      setError(error.response?.data?.message || 'Failed to create list.');
     }
   };
 
   const handleAddMovieToList = async (movieId: number) => {
     if (selectedListId === null) {
-      alert('Please select a Lists first');
+      alert('Please select a list first');
       return;
     }
 
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       await axios.post(
-        `http://localhost:5001/list/${selectedListId}/add_movie`,
+        `${apiUrl}/list/${selectedListId}/add_movie`,
         { movie_id: movieId },
         {
           headers: {
@@ -105,11 +133,12 @@ const UserPage = () => {
         }
       );
       fetchUserLists(); // Refresh the lists after adding a movie
-      alert('Movie added to Lists');
+      alert('Movie added to list');
       setSearchTerm('');
       setSearchResults([]);
-    } catch (error) {
-      console.error('Error adding movie to Lists', error);
+    } catch (error: any) {
+      console.error('Error adding movie to list', error);
+      setError(error.response?.data?.message || 'Failed to add movie to list.');
     }
   };
 
@@ -120,6 +149,7 @@ const UserPage = () => {
   return (
     <div className="min-h-screen p-4">
       <h1 className="text-2xl mb-4">User Dashboard</h1>
+      {error && <p className="text-red-500">{error}</p>}
       <div className="mb-4">
         <input
           type="text"
@@ -149,7 +179,7 @@ const UserPage = () => {
               <li
                 key={movie.id}
                 className="p-2 hover:bg-gray-200 cursor-pointer"
-                onClick={() => handleMovieClick(movie.id)}
+                onClick={() => handleAddMovieToList(movie.id)}
               >
                 {movie.title} ({movie.release_year})
               </li>

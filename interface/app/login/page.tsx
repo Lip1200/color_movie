@@ -1,8 +1,10 @@
+"use client";
+
 import React, { useState } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import axios, { AxiosError } from 'axios';
 import Cookies from 'js-cookie';
+import Link from 'next/link';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,8 +14,12 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setError(''); // Reset error message
+
     try {
-      const response = await axios.post('http://localhost:5001/login', { email, password });
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.post(`${apiUrl}/login`, { email, password });
+
       if (response.status === 200) {
         Cookies.set('token', response.data.token, { expires: 1 }); // Expires in 1 day
         Cookies.set('user_id', response.data.user_id, { expires: 1 }); // Expires in 1 day
@@ -21,8 +27,17 @@ const LoginPage: React.FC = () => {
       } else {
         setError('Login failed. Please check your credentials.');
       }
-    } catch (error) {
-      setError('Login failed. Please check your credentials.');
+    } catch (err: any) {
+      if (err.response) {
+        // The request was made and the server responded with a status code outside of the range of 2xx
+        setError('Login failed. Please check your credentials.');
+      } else if (err.request) {
+        // The request was made but no response was received
+        setError('No response from the server. Please try again later.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setError('An unexpected error occurred. Please try again.');
+      }
     }
   };
 
@@ -65,7 +80,7 @@ const LoginPage: React.FC = () => {
             >
               Login
             </button>
-            <Link href="/register">
+            <Link href="/interface/app/register/page">
               <a className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
                 Register here
               </a>

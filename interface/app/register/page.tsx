@@ -1,7 +1,9 @@
+"use client";
+
 import React, { useState } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import Link from 'next/link';
 
 const RegisterPage = () => {
   const [name, setName] = useState('');
@@ -15,7 +17,8 @@ const RegisterPage = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5001/register_user', { name, email, password });
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.post(`${apiUrl}/register_user`, { name, email, password });
 
       if (response.status === 200) {
         // Registration successful, redirect to the login page or update the UI
@@ -23,7 +26,7 @@ const RegisterPage = () => {
       } else {
         setError('Registration failed. Please check your details and try again.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
       setError('An error occurred during registration. Please try again.');
     }
