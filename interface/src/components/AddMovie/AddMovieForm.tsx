@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useState } from 'react';
-import axios, { AxiosError } from 'axios';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const AddMovieForm = () => {
@@ -15,6 +15,12 @@ const AddMovieForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (!id || !list_id) {
+      setError('Movie ID or List ID is missing.');
+    }
+  }, [id, list_id]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (note === null) {
@@ -26,7 +32,8 @@ const AddMovieForm = () => {
     try {
       const token = Cookies.get('token');
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      await axios.post(
+      console.log(`Posting to ${apiUrl}/list/${list_id}/add_movie with movie_id: ${id}, note: ${note}, comment: ${comment}`);
+      const response = await axios.post(
         `${apiUrl}/list/${list_id}/add_movie`,
         { movie_id: id, note, comment },
         {
@@ -35,21 +42,23 @@ const AddMovieForm = () => {
           },
         }
       );
-      router.push(`/list/${list_id}`);
-    } catch (err: any) {
-      if (err.response) {
-        setError('Error adding movie to the list');
+
+      if (response.status === 201) {
+        router.push(`/list/${list_id}`);
       } else {
-        setError('An error occurred. Please try again.');
+        setError('Failed to add movie to the list.');
       }
+    } catch (err: any) {
+      console.error('Error adding movie to list:', err);
+      setError(err.response?.data?.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h1>Add Movie to List</h1>
+    <div className="min-h-screen p-4">
+      <h1 className="text-2xl mb-4">Add Movie to List</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="note" className="block text-sm font-medium text-gray-700">
@@ -79,7 +88,7 @@ const AddMovieForm = () => {
             className="mt-1 p-2 block w-full border border-gray-300 rounded-md"
           />
         </div>
-        <button type="submit" className="bg-green-500 text-white p-2 rounded" disabled={loading}>
+        <button type="submit" className="bg-green-500 text-white p-2 rounded" disabled={loading || !id || !list_id}>
           {loading ? 'Submitting...' : 'Submit'}
         </button>
         {error && <p className="text-red-500">{error}</p>}

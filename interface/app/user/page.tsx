@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import axios, {AxiosError} from 'axios';
+import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 
@@ -44,7 +44,6 @@ const UserPage = () => {
         },
       });
       const listsData = response.data || [];
-      // Ensure each list has a movies property that is an array
       const validatedLists = listsData.map((list: any) => ({
         ...list,
         movies: Array.isArray(list.movies) ? list.movies : [],
@@ -89,16 +88,10 @@ const UserPage = () => {
   }, []);
 
   const handleCreateList = async () => {
-    const userId = Cookies.get('user_id');
-    if (!userId) {
-      setError('User ID not found');
-      return;
-    }
-
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      await axios.post(
-        `${apiUrl}/user/${userId}/lists`,
+      const response = await axios.post(
+        `${apiUrl}/lists`,
         { name: newListName },
         {
           headers: {
@@ -107,7 +100,7 @@ const UserPage = () => {
         }
       );
       setNewListName('');
-      fetchUserLists(); // Refresh the lists after creating a new one
+      setLists([...lists, response.data.list]); // Add the newly created list to the existing lists
       alert('List created successfully');
     } catch (error: any) {
       console.error('Error creating list', error);
@@ -146,9 +139,22 @@ const UserPage = () => {
     router.push(`/movies/${movieId}`);
   };
 
+  const handleListClick = (listId: number) => {
+    router.push(`/list/${listId}`);
+  };
+
+  const handleBackToHome = () => {
+    router.push('/dashboard');
+  };
+
   return (
     <div className="min-h-screen p-4">
-      <h1 className="text-2xl mb-4">User Dashboard</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl">User Dashboard</h1>
+        <button onClick={handleBackToHome} className="bg-blue-500 text-white p-2 rounded">
+          Back to Home
+        </button>
+      </div>
       {error && <p className="text-red-500">{error}</p>}
       <div className="mb-4">
         <input
@@ -194,11 +200,20 @@ const UserPage = () => {
         ) : lists.length > 0 ? (
           lists.map((list) => (
             <div key={list.list_id} className="mb-4 p-4 border border-gray-300 rounded">
-              <h3 className="text-lg font-bold">{list.list_name}</h3>
+              <h3
+                className="text-lg font-bold cursor-pointer text-blue-500 hover:underline"
+                onClick={() => handleListClick(list.list_id)}
+              >
+                {list.list_name}
+              </h3>
               <ul>
                 {list.movies.length > 0 ? (
                   list.movies.map((movie) => (
-                    <li key={movie.id} className="flex justify-between items-center">
+                    <li
+                      key={movie.id}
+                      className="flex justify-between items-center cursor-pointer text-blue-500 hover:underline"
+                      onClick={() => handleMovieClick(movie.id)}
+                    >
                       {movie.title} ({movie.release_year})
                     </li>
                   ))
