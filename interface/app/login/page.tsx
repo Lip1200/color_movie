@@ -80,7 +80,7 @@ const LoginPage: React.FC = () => {
             >
               Login
             </button>
-            <Link href="/interface/app/register/page">
+            <Link href="/register">
               <a className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
                 Register here
               </a>

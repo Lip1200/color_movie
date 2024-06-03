@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import React, { useEffect, useState, useCallback } from 'react';
-import axios, {AxiosError} from 'axios';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 
 interface Movie {
   id: number;
@@ -18,21 +19,27 @@ interface List {
   nom_liste: string;
 }
 
+interface SimilarMovie {
+  id: number;
+  titre: string;
+  annee: number;
+}
+
 const MoviePage = () => {
   const [movie, setMovie] = useState<Movie | null>(null);
   const [lists, setLists] = useState<List[]>([]);
   const [selectedList, setSelectedList] = useState<number | null>(null);
+  const [similarMovies, setSimilarMovies] = useState<SimilarMovie[]>([]);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const id = searchParams.get('id');
+  const { id } = useParams();
 
   const fetchMovie = useCallback(async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/movies/${id}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${Cookies.get('token')}`,
         },
       });
       setMovie(response.data);
@@ -47,7 +54,7 @@ const MoviePage = () => {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/user_lists`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${Cookies.get('token')}`,
         },
       });
       setLists(response.data || []); // Default to an empty array if data is null
@@ -56,6 +63,34 @@ const MoviePage = () => {
       setError(err.response?.data?.message || 'Failed to fetch user lists');
     }
   }, []);
+
+  const fetchSimilarMovies = useCallback(async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.get(`${apiUrl}/similar_movies/${id}`, {
+        headers: {
+          Authorization: `Bearer ${Cookies.get('token')}`,
+        },
+      });
+
+      const similarMovieIds = response.data.similar_movie_ids;
+      const similarMoviesData = await Promise.all(
+        similarMovieIds.map(async (movieId: number) => {
+          const movieResponse = await axios.get(`${apiUrl}/movies/${movieId}`, {
+            headers: {
+              Authorization: `Bearer ${Cookies.get('token')}`,
+            },
+          });
+          return movieResponse.data;
+        })
+      );
+
+      setSimilarMovies(similarMoviesData);
+    } catch (err: any) {
+      console.error('Error fetching similar movies:', err);
+      setError(err.response?.data?.message || 'Failed to fetch similar movies');
+    }
+  }, [id]);
 
   useEffect(() => {
     if (id) {
@@ -67,28 +102,21 @@ const MoviePage = () => {
     fetchUserLists();
   }, [fetchUserLists]);
 
-  const handleAddToList = async () => {
+  const handleAddToList = () => {
     if (selectedList === null) {
       setError('Please select a list.');
       return;
     }
 
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      await axios.post(
-        `${apiUrl}/list/${selectedList}/add_movie`,
-        { movie_id: id },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        }
-      );
-      alert('Movie added to list');
-    } catch (err: any) {
-      console.error('Error adding movie to list:', err);
-      setError(err.response?.data?.message || 'Failed to add movie to list.');
-    }
+    router.push(`/add-movie?id=${id}&list_id=${selectedList}`);
+  };
+
+  const handleSuggestSimilar = () => {
+    fetchSimilarMovies();
+  };
+
+  const handleSimilarMovieClick = (movieId: number) => {
+    router.push(`/movies/${movieId}`);
   };
 
   if (error) {
@@ -100,15 +128,19 @@ const MoviePage = () => {
   }
 
   return (
-    <div>
-      <h1>{movie.titre}</h1>
+    <div className="min-h-screen p-4">
+      <h1 className="text-2xl mb-4">{movie.titre}</h1>
       <p><strong>Year:</strong> {movie.annee}</p>
       <p><strong>Type:</strong> {movie.type}</p>
       {movie.synopsis && <p><strong>Synopsis:</strong> {movie.synopsis}</p>}
       {movie.note_moyenne && <p><strong>Average Rating:</strong> {movie.note_moyenne}</p>}
-      <div>
-        <select value={selectedList ?? ''} onChange={(e) => setSelectedList(Number(e.target.value))}>
-          <option value="" disabled>Select a list</option>
+      <div className="mt-4">
+        <select
+          value={selectedList ?? ''}
+          onChange={(e) => setSelectedList(Number(e.target.value))}
+          className="p-2 border border-gray-300 rounded"
+        >
+          <option value="" disabled>Select a list to add this movie</option>
           {lists.length > 0 ? (
             lists.map((list) => (
               <option key={list.id} value={list.id}>{list.nom_liste}</option>
@@ -120,8 +152,23 @@ const MoviePage = () => {
         <button onClick={handleAddToList} className="bg-blue-500 text-white p-2 rounded ml-2">
           Add to List
         </button>
+        <button onClick={handleSuggestSimilar} className="bg-green-500 text-white p-2 rounded ml-2">
+          Suggest Similar Movies
+        </button>
         {error && <p className="text-red-500">{error}</p>}
       </div>
+      {similarMovies.length > 0 && (
+        <div className="mt-4">
+          <h2 className="text-xl mb-2">Similar Movies</h2>
+          <ul className="border p-2 mt-2">
+            {similarMovies.map((similarMovie) => (
+              <li key={similarMovie.id} className="cursor-pointer mb-2 hover:bg-gray-200" onClick={() => handleSimilarMovieClick(similarMovie.id)}>
+                {similarMovie.titre} ({similarMovie.annee})
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

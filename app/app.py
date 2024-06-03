@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import current_user, login_user, UserMixin, LoginManager
 from flask_admin import Admin
@@ -59,8 +59,6 @@ jwt = JWTManager(app)
 admin.add_view(admin_setup.AdminModelView(Utilisateur, db.session))
 
 
-
-
 @contextmanager
 def session_scope():
     """Provide a transactional scope around a series of operations."""
@@ -75,9 +73,11 @@ def session_scope():
     finally:
         session.close()
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return Utilisateur.query.get(int(user_id))
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -88,15 +88,18 @@ def login():
     user = Utilisateur.query.filter_by(email=email).first()
 
     if user and bcrypt.check_password_hash(user.mot_de_passe, password):
-        access_token = create_access_token(identity={'user_id': user.id, 'is_admin': user.is_admin}, expires_delta=timedelta(hours=24))
+        access_token = create_access_token(identity={'user_id': user.id, 'is_admin': user.is_admin},
+                                           expires_delta=timedelta(hours=24))
         return jsonify({'token': access_token, 'user_id': user.id})
 
     return jsonify({'message': 'Invalid credentials'}), 401
+
 
 @app.route('/')
 @jwt_required()
 def index():
     return jsonify(message="Hello from Flask for Movie!")
+
 
 @app.route('/endpoints', methods=['GET'])
 def list_endpoints():
@@ -110,11 +113,14 @@ def list_endpoints():
             })
     return jsonify(endpoints)
 
+
 @app.route('/movies', methods=['GET'])
 @jwt_required()
 def get_movies():
     movies = Metrage.query.all()
-    return jsonify({'Movie': [{'id': movie.id, 'title': movie.titre, 'director': movie.credits.directeur_nom} for movie in movies]})
+    return jsonify({'Movie': [{'id': movie.id, 'title': movie.titre, 'director': movie.credits.directeur_nom} for movie
+                              in movies]})
+
 
 @app.route('/list/<int:list_id>', methods=['GET'])
 @jwt_required()
@@ -169,13 +175,16 @@ def get_similar_movies_by_list(list_id):
             ]
         })
 
+
 @app.route('/user/<int:user_id>/ratings', methods=['GET'])
 @jwt_required()
 def get_ratings(user_id):
     with session_scope() as session:
         ratings = get_user_ratings(session, user_id)
-        ratings_list = [{"movie_id": rating.id_metrage, "note": rating.note, "comment": rating.commentaire} for rating in ratings]
+        ratings_list = [{"movie_id": rating.id_metrage, "note": rating.note, "comment": rating.commentaire} for rating
+                        in ratings]
         return jsonify({"user_id": user_id, "ratings": ratings_list})
+
 
 @app.route('/user/<int:user_id>/lists', methods=['GET'])
 @jwt_required()
@@ -193,15 +202,18 @@ def get_lists(user_id):
             return jsonify({"error": str(e)}), 500
 
 
-
 @app.route('/similar_movies/<int:movie_id>', methods=['GET'])
 @jwt_required()
 def similar_movies(movie_id):
     try:
         similar_movie_ids, similar_movie_similarities = find_similar_movies_by_id(collection, movie_id, top_n=5)
-        return jsonify({"similar_movie_ids": similar_movie_ids, "similar_movie_similarities": similar_movie_similarities})
+        if not similar_movie_ids:
+            return jsonify({"message": "No similar movies found."}), 404
+        return jsonify({"similar_movies": [{"movie_id": movie_id, "similarity": similarity} for movie_id, similarity in zip(similar_movie_ids, similar_movie_similarities)]})
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+
 
 @app.route('/similar_movies_by_list/<int:list_id>', methods=['GET'])
 @jwt_required()
@@ -209,9 +221,11 @@ def similar_movies_by_list(list_id):
     try:
         with session_scope() as session:
             similar_movie_ids, similar_movie_similarities = find_similar_movies_by_list_id(session, collection, list_id, top_n=5)
-            return jsonify({"similar_movie_ids": similar_movie_ids, "similar_movie_similarities": similar_movie_similarities})
+            return jsonify(
+                {"similar_movie_ids": similar_movie_ids, "similar_movie_similarities": similar_movie_similarities})
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
 
 @app.route('/user_lists', methods=['GET'])
 @jwt_required()
@@ -220,8 +234,6 @@ def get_user_lists():
     lists = Liste.query.filter_by(id_utilisateur=user_id).all()
     lists_data = [{"id": lst.id, "nom_liste": lst.nom_liste} for lst in lists]
     return jsonify(lists_data)
-
-
 
 
 @app.route('/user/<int:user_id>/details', methods=['GET'])
@@ -282,6 +294,7 @@ def register_user():
             session.rollback()
             return jsonify({"message": "Registration failed", "error": str(e)}), 500
 
+
 @app.route('/lists', methods=['POST'])
 @jwt_required()
 def create_list():
@@ -300,30 +313,34 @@ def create_list():
 
         return jsonify({'message': 'Lists created', 'Lists': {'id': new_list.id, 'name': new_list.nom_liste}}), 201
 
+
 @app.route('/list/<int:list_id>/add_movie', methods=['POST'])
 @jwt_required()
 def add_movie_to_list(list_id):
+    data = request.get_json()
+    movie_id = data.get('movie_id')
+    note = data.get('note')
+    comment = data.get('comment')
+
+    current_app.logger.debug(f"Received data: {data}")
+
+    if not movie_id or note is None:
+        return jsonify({'error': 'Movie ID and rating are required.'}), 400
+
     with session_scope() as session:
-        data = request.get_json()
-        movie_id = data.get('movie_id')
-        note = data.get('note')
-        comment = data.get('comment')
-
-        if not movie_id or note is None:
-            return jsonify({'error': 'No movie ID or rating provided'}), 400
-
         movie = session.query(Metrage).get(movie_id)
         if not movie:
-            return jsonify({'error': 'Movie not found'}), 404
+            current_app.logger.error(f"Movie not found: {movie_id}")
+            return jsonify({'error': 'Movie not found.'}), 404
 
         list_entry = EntreeListe(id_liste=list_id, id_metrage=movie.id, note=note, comment=comment)
         session.add(list_entry)
         session.commit()
 
-        # Fetch updated Lists details
-        list_details = get_list_details(list_id).json
+        current_app.logger.debug(f"Movie {movie_id} added to list {list_id}")
 
-        return jsonify(list_details), 201
+        return jsonify({'message': 'Movie added to list.'}), 201
+
 
 @app.route('/search_movies', methods=['GET'])
 @jwt_required()
@@ -340,6 +357,7 @@ def search_movies():
         except Exception as e:
             logging.error(f"Error searching movies: {str(e)}")
             return jsonify({"error": str(e)}), 500
+
 
 @app.route('/list/<int:list_id>', methods=['DELETE'])
 @jwt_required()
@@ -360,6 +378,7 @@ def delete_list(list_id):
 
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 
+
 @app.after_request
 def after_request(response):
     response.headers["Access-Control-Allow-Origin"] = "http://localhost:3000"
@@ -368,60 +387,61 @@ def after_request(response):
     return response
 
 
-
 @app.route('/list/<int:list_id>/remove_movie', methods=['DELETE', 'OPTIONS'])
 @jwt_required()
 def remove_movie_from_list(list_id):
     if request.method == 'OPTIONS':
         return jsonify({}), 200
 
-    data = request.get_json()
-    logging.debug(f'Received data: {data}')
+    with session_scope() as session:
+        data = request.get_json()
+        logging.debug(f'Received data: {data}')
 
-    if not data:
-        logging.error('No data provided')
-        return jsonify({'error': 'No data provided'}), 400
+        if not data:
+            logging.error('No data provided')
+            return jsonify({'error': 'No data provided'}), 400
 
-    movie_id = data.get('movie_id')
-    logging.debug(f'Movie ID: {movie_id}')
+        movie_id = data.get('movie_id')
+        logging.debug(f'Movie ID: {movie_id}')
 
-    if not movie_id:
-        logging.error('No movie ID provided')
-        return jsonify({'error': 'No movie ID provided'}), 400
+        if not movie_id:
+            logging.error('No movie ID provided')
+            return jsonify({'error': 'No movie ID provided'}), 400
 
-    list_entry = EntreeListe.query.filter_by(id_liste=list_id, id_metrage=movie_id).first()
-    if not list_entry:
-        logging.error('Movie not found in the Lists')
-        return jsonify({'error': 'Movie not found in the Lists'}), 404
+        list_entry = session.query(EntreeListe).filter_by(id_liste=list_id, id_metrage=movie_id).first()
+        if not list_entry:
+            logging.error('Movie not found in the Lists')
+            return jsonify({'error': 'Movie not found in the Lists'}), 404
 
-    try:
-        db.session.delete(list_entry)
-        db.session.commit()
-        logging.info(f'Movie {movie_id} removed from Lists {list_id}')
-    except Exception as e:
-        logging.error(f'Error removing movie from Lists: {e}')
-        return jsonify({'error': 'Failed to remove movie from Lists'}), 500
+        try:
+            session.delete(list_entry)
+            session.commit()
+            logging.info(f'Movie {movie_id} removed from Lists {list_id}')
+        except Exception as e:
+            logging.error(f'Error removing movie from Lists: {e}')
+            return jsonify({'error': 'Failed to remove movie from Lists'}), 500
 
-    # Fetch updated Lists details
-    return get_list_details(list_id)
+        # Fetch updated Lists details
+        return get_list_details(list_id)
 
 
 @app.route('/movies/<int:movie_id>', methods=['GET'])
 @jwt_required()
 def get_movie_details(movie_id):
-    movie = Metrage.query.get(movie_id)
-    if not movie:
-        return jsonify({"error": "Movie not found"}), 404
+    with session_scope() as session:
+        movie = session.query(Metrage).get(movie_id)
+        if not movie:
+            return jsonify({"error": "Movie not found"}), 404
 
-    movie_data = {
-        "id": movie.id,
-        "titre": movie.titre,
-        "annee": movie.annee,
-        "type": movie.type,
-        "synopsis": movie.synopsis,
-        "note_moyenne": movie.note_moyenne
-    }
-    return jsonify(movie_data)
+        movie_data = {
+            "id": movie.id,
+            "titre": movie.titre,
+            "annee": movie.annee,
+            "type": movie.type,
+            "synopsis": movie.synopsis,
+            "note_moyenne": movie.note_moyenne
+        }
+        return jsonify(movie_data)
 
 
 if __name__ == '__main__':
