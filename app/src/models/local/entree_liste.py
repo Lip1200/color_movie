@@ -11,4 +11,5 @@ class EntreeListe(Base):
     id_liste: Mapped[int] = mapped_column(ForeignKey("liste.id"))
     id_metrage: Mapped[int] = mapped_column(ForeignKey("metrage.id"))
 
+    liste: Mapped["Liste"] = relationship(back_populates="entrees_metrages")
     metrage: Mapped["Metrage"] = relationship()

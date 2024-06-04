@@ -13,7 +13,7 @@ class Liste(Base):
 
     utilisateur: Mapped[Utilisateur] = relationship(back_populates="listes")
     nom_liste: Mapped[str] = mapped_column(String(50))
-    entrees_metrages: Mapped[list[EntreeListe]] = relationship(cascade="all, delete-orphan")
+    entrees_metrages: Mapped[list["EntreeListe"]] = relationship(back_populates="liste", cascade="all, delete-orphan")
 
     def __repr__(self):
         return (f"Liste(id={self.id}, utilisateur={self.utilisateur}, titre={self.titre})")

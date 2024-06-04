@@ -126,7 +126,7 @@ def get_user_list_ids(session, user_id):
 
 # Fonction pour obtenir les détails complets d'un utilisateur
 def get_user_details(session, user_id):
-    user = session.query(Utilisateur).get(user_id)
+    user = session.get(Utilisateur, user_id)
     if not user:
         return None
 
@@ -157,27 +157,6 @@ def get_user_details(session, user_id):
 
     return user_data
 
-def get_movie_details(session, movie_ids):
-    movies = session.query(Metrage).options(
-        joinedload(Metrage.credits).joinedload(Credit.personne)
-    ).filter(
-        Metrage.id.in_(movie_ids)
-    ).all()
-
-    movie_details = []
-    for movie in movies:
-        directors = [credit.personne.nom for credit in movie.credits if credit.fonction == 'Director']
-        actors = [credit.personne.nom for credit in movie.credits if credit.fonction == 'Actor']
-
-        movie_details.append({
-            "title": movie.titre,
-            "year": movie.annee,
-            "directors": directors,
-            "actors": actors,
-            "synopsis": movie.synopsis
-        })
-
-    return movie_details
 
 def search_movie_by_title(session, title):
     movies = session.query(Metrage).filter(Metrage.titre.ilike(f"%{title}%")).all()
