@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import Header from '@/components/Header'; // Adjust the path if necessary
 
 interface Movie {
   id: number;
@@ -100,7 +101,7 @@ const UserPage = () => {
         }
       );
       setNewListName('');
-      setLists([...lists, response.data.list]); // Add the newly created list to the existing lists
+      setLists([...lists, response.data.list]);
       alert('List created successfully');
     } catch (error: any) {
       console.error('Error creating list', error);
@@ -143,89 +144,104 @@ const UserPage = () => {
     router.push(`/list/${listId}`);
   };
 
-  const handleBackToHome = () => {
-    router.push('/dashboard');
+  const handleDeleteList = async (listId: number) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      await axios.delete(`${apiUrl}/list/${listId}`, {
+        headers: {
+          Authorization: `Bearer ${Cookies.get('token')}`,
+        },
+      });
+      fetchUserLists(); // Refresh the lists after deletion
+      alert('List deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting list', error);
+      setError(error.response?.data?.message || 'Failed to delete list.');
+    }
   };
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl">User Dashboard</h1>
-        <button onClick={handleBackToHome} className="bg-blue-500 text-white p-2 rounded">
-          Back to Home
-        </button>
-      </div>
-      {error && <p className="text-red-500">{error}</p>}
-      <div className="mb-4">
-        <input
-          type="text"
-          value={newListName}
-          onChange={(e) => setNewListName(e.target.value)}
-          className="p-2 border border-gray-300 rounded"
-          placeholder="New list name"
-        />
-        <button onClick={handleCreateList} className="bg-green-500 text-white p-2 rounded ml-2">
-          Create List
-        </button>
-      </div>
-      <div className="mb-4">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            handleSearch(e.target.value);
-          }}
-          className="p-2 border border-gray-300 rounded"
-          placeholder="Search movies"
-        />
-        {searchResults.length > 0 && (
-          <ul className="border border-gray-300 rounded mt-2 max-h-60 overflow-y-auto">
-            {searchResults.map((movie) => (
-              <li
-                key={movie.id}
-                className="p-2 hover:bg-gray-200 cursor-pointer"
-                onClick={() => handleAddMovieToList(movie.id)}
-              >
-                {movie.title} ({movie.release_year})
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      <div>
-        <h2 className="text-xl mb-4">My Lists</h2>
-        {loading ? (
-          <p>Loading...</p>
-        ) : lists.length > 0 ? (
-          lists.map((list) => (
-            <div key={list.list_id} className="mb-4 p-4 border border-gray-300 rounded">
-              <h3
-                className="text-lg font-bold cursor-pointer text-blue-500 hover:underline"
-                onClick={() => handleListClick(list.list_id)}
-              >
-                {list.list_name}
-              </h3>
-              <ul>
-                {list.movies.length > 0 ? (
-                  list.movies.map((movie) => (
-                    <li
-                      key={movie.id}
-                      className="flex justify-between items-center cursor-pointer text-blue-500 hover:underline"
-                      onClick={() => handleMovieClick(movie.id)}
-                    >
-                      {movie.title} ({movie.release_year})
-                    </li>
-                  ))
-                ) : (
-                  <p>No movies in this list.</p>
-                )}
-              </ul>
-            </div>
-          ))
-        ) : (
-          <p>No lists found.</p>
-        )}
+    <div className="min-h-screen">
+      <Header />
+      <div className="p-4">
+        {error && <p className="text-red-500">{error}</p>}
+        <div className="mb-4">
+          <input
+            type="text"
+            value={newListName}
+            onChange={(e) => setNewListName(e.target.value)}
+            className="p-2 border border-gray-300 rounded"
+            placeholder="New list name"
+          />
+          <button onClick={handleCreateList} className="bg-green-500 text-white p-2 rounded ml-2">
+            Create List
+          </button>
+        </div>
+        <div className="mb-4">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              handleSearch(e.target.value);
+            }}
+            className="p-2 border border-gray-300 rounded"
+            placeholder="Search movies"
+          />
+          {searchResults.length > 0 && (
+            <ul className="border border-gray-300 rounded mt-2 max-h-60 overflow-y-auto">
+              {searchResults.map((movie) => (
+                <li
+                  key={movie.id}
+                  className="p-2 hover:bg-gray-200 cursor-pointer"
+                  onClick={() => handleMovieClick(movie.id)}
+                >
+                  {movie.title} ({movie.release_year})
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <h2 className="text-xl mb-4">My Lists</h2>
+          {loading ? (
+            <p>Loading...</p>
+          ) : lists.length > 0 ? (
+            lists.map((list) => (
+              <div key={list.list_id} className="mb-4 p-4 border border-gray-300 rounded">
+                <h3
+                  className="text-lg font-bold cursor-pointer text-blue-500 hover:underline"
+                  onClick={() => handleListClick(list.list_id)}
+                >
+                  {list.list_name}
+                </h3>
+                <button
+                  onClick={() => handleDeleteList(list.list_id)}
+                  className="bg-red-500 text-white p-1 rounded mt-2"
+                >
+                  Delete List
+                </button>
+                <ul>
+                  {list.movies.length > 0 ? (
+                    list.movies.map((movie) => (
+                      <li
+                        key={movie.id}
+                        className="flex justify-between items-center cursor-pointer text-blue-500 hover:underline"
+                        onClick={() => handleMovieClick(movie.id)}
+                      >
+                        {movie.title} ({movie.release_year})
+                      </li>
+                    ))
+                  ) : (
+                    <p>No movies in this list.</p>
+                  )}
+                </ul>
+              </div>
+            ))
+          ) : (
+            <p>No lists found.</p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -16,5 +16,6 @@ class Critique(Base):
     note: Mapped[int]
     commentaire: Mapped[Text] = mapped_column(Text)
 
+
     def __repr__(self):
         return f"Critique(id={self.id}, utilisateur={self.utilisateur}, metrage={self.metrage}, note={self.note}, commentaire={self.commentaire})"
