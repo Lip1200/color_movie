@@ -111,10 +111,10 @@ const MoviePage = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-100">
       <Header />
       <div className="p-4">
-        <h1 className="text-2xl mb-4">{movie.titre}</h1>
+        <h1 className="text-2xl font-bold mb-4">{movie.titre}</h1>
         <p><strong>Year:</strong> {movie.annee}</p>
         <p><strong>Type:</strong> {movie.type}</p>
         {movie.synopsis && <p><strong>Synopsis:</strong> {movie.synopsis}</p>}
@@ -123,7 +123,7 @@ const MoviePage = () => {
           <select
             value={selectedList ?? ''}
             onChange={(e) => setSelectedList(Number(e.target.value))}
-            className="p-2 border border-gray-300 rounded"
+            className="p-2 border border-gray-300 rounded w-full md:w-1/2 lg:w-1/3"
           >
             <option value="" disabled>Select a list to add this movie</option>
             {lists.length > 0 ? (
@@ -134,19 +134,21 @@ const MoviePage = () => {
               <option disabled>No lists found</option>
             )}
           </select>
-          <button onClick={handleAddToList} className="bg-blue-500 text-white p-2 rounded ml-2">
-            Add to List
-          </button>
-          <button onClick={handleSuggestSimilar} className="bg-green-500 text-white p-2 rounded ml-2">
-            Suggest Similar Movies
-          </button>
+          <div className="flex mt-4 space-x-2">
+            <button onClick={handleAddToList} className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">
+              Add to List
+            </button>
+            <button onClick={handleSuggestSimilar} className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-700">
+              Suggest Similar Movies
+            </button>
+          </div>
         </div>
         {similarMovies.length > 0 && (
           <div className="mt-4">
-            <h2 className="text-xl mb-2">Similar Movies</h2>
-            <ul className="border p-2 mt-2">
+            <h2 className="text-xl font-bold mb-2">Similar Movies</h2>
+            <ul className="border p-2 mt-2 rounded shadow bg-white space-y-2">
               {similarMovies.map((similarMovie) => (
-                <li key={similarMovie.id} className="cursor-pointer mb-2 hover:bg-gray-200" onClick={() => handleSimilarMovieClick(similarMovie.id)}>
+                <li key={similarMovie.id} className="cursor-pointer p-2 hover:bg-gray-200 rounded" onClick={() => handleSimilarMovieClick(similarMovie.id)}>
                   {similarMovie.titre} ({similarMovie.annee})
                 </li>
               ))}

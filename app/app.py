@@ -29,7 +29,8 @@ from func import (
     get_user_details,
     find_similar_movies_by_id,
     find_similar_movies_by_list_id,
-    search_movie_by_title
+    search_movie_by_title,
+    jsonify_movies
 )
 import admin_setup
 from flask_bcrypt import Bcrypt
@@ -150,27 +151,11 @@ def get_list_details(list_id):
 
         data = {
             'list_name': list_details[0].list_name,
-            'Movie': [{'id': result.movie_id, 'title': result.movie_title, 'release_date': result.release_date, 'director': result.director_name} for result in list_details]
+            'Movie': [{'id': result.movie_id, 'title': result.movie_title, 'release_date': result.release_date,
+                       'director': result.director_name} for result in list_details]
         }
 
         return jsonify(data)
-
-
-
-@app.route('/list/<int:list_id>/similar_movies', methods=['GET'])
-@jwt_required()
-def get_similar_movies_by_list(list_id):
-    with session_scope() as session:
-        similar_movie_ids, similar_movie_distances = find_similar_movies_by_list_id(session, list_id, top_n=5)
-        if not similar_movie_ids:
-            return jsonify({"message": "No similar Movie found."}), 404
-        similar_movies = []
-        for movie in similar_movie_ids:
-            similar_movies.append(session.get(Metrage, movie).to_dict())
-        return jsonify({
-            "list_id": list_id,
-            "similar_movies": similar_movies
-        })
 
 
 @app.route('/user/<int:user_id>/ratings', methods=['GET'])
@@ -205,52 +190,23 @@ def similar_movies(movie_id):
     try:
         with session_scope() as session:
             similar_movie_ids, similar_movie_similarities = find_similar_movies_by_id(collection, movie_id, top_n=5)
-            if not similar_movie_ids:
-                return jsonify({"message": "No similar movies found."}), 404
-            similar_movies = []
-            for movie_id in similar_movie_ids:
-                movie = session.get(Metrage, movie_id)
-                if movie:
-                    similar_movies.append({
-                        'id': movie.id,
-                        'title': movie.titre,
-                        'release_year': movie.annee,
-                        'type': movie.type,
-                        'synopsis': movie.synopsis,
-                        'note_moyenne': movie.note_moyenne
-                    })
-            return jsonify({"similar_movies": similar_movies})
+            return jsonify_movies(session, similar_movie_ids)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-
-
-@app.route('/similar_movies_by_list/<int:list_id>', methods=['GET'])
+@app.route('/list/<int:list_id>/similar_movies', methods=['GET'])
 @jwt_required()
 def similar_movies_by_list(list_id):
     try:
         with session_scope() as session:
-            similar_movie_ids, similar_movie_similarities = find_similar_movies_by_list_id(session, collection, list_id, top_n=5)
-            similar_movies = []
-            for movie_id in similar_movie_ids:
-                movie = session.get(Metrage, movie_id)
-                if movie:
-                    similar_movies.append({
-                        'id': movie.id,
-                        'title': movie.titre,
-                        'release_year': movie.annee,
-                        'type': movie.type,
-                        'synopsis': movie.synopsis,
-                        'note_moyenne': movie.note_moyenne
-                    })
-            return jsonify({"similar_movies": similar_movies})
+            similar_movie_ids, similar_movie_similarities = find_similar_movies_by_list_id(session, collection, list_id,
+                                                                                           top_n=5)
+            return jsonify_movies(session, similar_movie_ids)
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-
-
 
 
 @app.route('/user_lists', methods=['GET'])
@@ -475,7 +431,6 @@ def get_movie_details(movie_id):
             "note_moyenne": movie.note_moyenne
         }
         return jsonify(movie_data)
-
 
 
 if __name__ == '__main__':

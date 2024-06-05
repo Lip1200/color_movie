@@ -115,18 +115,18 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-100">
       <Header />
       <div className="p-4">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl">Dashboard</h1>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="flex items-center">
             <button onClick={handleUserClick} className="text-blue-500 underline mr-4">
               {userName}
             </button>
             <button
               onClick={handleLogout}
-              className="bg-red-500 text-white p-2 rounded"
+              className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-700"
             >
               Logout
             </button>
@@ -137,18 +137,18 @@ const Dashboard = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="p-2 border border-gray-300 rounded"
+            className="p-2 border border-gray-300 rounded w-full"
             placeholder="Search movies"
           />
-          {loading && <p>Loading...</p>}
+          {loading && <p className="text-gray-500">Loading...</p>}
           {error && <p className="text-red-500">{error}</p>}
           {searchResults.length > 0 && (
-            <ul className="border p-2 mt-2">
+            <ul className="border p-2 mt-2 rounded shadow bg-white space-y-2">
               {searchResults.map((movie) => (
                 <li
                   key={movie.id}
                   onClick={() => handleMovieClick(movie.id)}
-                  className="cursor-pointer mb-2 hover:bg-gray-200"
+                  className="cursor-pointer p-2 hover:bg-gray-200 rounded"
                 >
                   {movie.title} ({movie.release_year})
                 </li>
