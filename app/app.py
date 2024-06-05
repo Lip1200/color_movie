@@ -1,8 +1,9 @@
-from flask import jsonify, request, current_app
+import os
+from flask import Flask, jsonify, request, current_app
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import current_user, login_user, UserMixin, LoginManager
+from flask_jwt_extended import JWTManager, jwt_required
+from flask_login import LoginManager
 from flask_admin import Admin
-import flask_jwt_extended
 from datetime import datetime, timedelta
 from config import Config
 from src.models.local import (
@@ -19,6 +20,7 @@ from src.models.local import (
 )
 import numpy as np
 import chromadb
+from chromadb.config import Settings
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from func import (
@@ -36,7 +38,6 @@ import admin_setup
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
-import logging
 from contextlib import contextmanager
 
 # Configuration de la base de données MySQL
@@ -44,7 +45,7 @@ engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
 Session = sessionmaker(bind=engine)
 
 # Configuration de ChromaDB
-chroma_client = chromadb.PersistentClient(path="../vec_data")
+chroma_client = chromadb.PersistentClient(os.getenv("CHROMADB_STORAGE_DIR"))
 collection = chroma_client.get_or_create_collection(name="Movie", metadata={"hnsw:space": "cosine"})
 
 # Création de l'application app
@@ -180,20 +181,24 @@ def get_lists(user_id):
             lists_data = [{'list_id': list_id, 'list_name': list_name} for list_id, list_name in lists]
             return jsonify(lists_data)
         except Exception as e:
-            logging.error(f"Error getting user lists: {str(e)}")
+            current_app.logger.error(f"Error getting user lists: {str(e)}")
             return jsonify({"error": str(e)}), 500
 
 
 @app.route('/similar_movies/<int:movie_id>', methods=['GET'])
 @jwt_required()
 def similar_movies(movie_id):
+    current_app.logger.debug(f"Received request for similar movies to movie ID: {movie_id}")
     try:
         with session_scope() as session:
             similar_movie_ids, similar_movie_similarities = find_similar_movies_by_id(collection, movie_id, top_n=5)
+            current_app.logger.debug(f"Found similar movies: {similar_movie_ids}")
             return jsonify_movies(session, similar_movie_ids)
     except ValueError as e:
+        current_app.logger.error(f"ValueError: {str(e)}")
         return jsonify({"error": str(e)}), 400
     except Exception as e:
+        current_app.logger.error(f"Exception: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -340,7 +345,7 @@ def search_movies():
             movies_data = [{'id': movie.id, 'title': movie.titre, 'release_year': movie.annee} for movie in movies]
             return jsonify(movies_data)
         except Exception as e:
-            logging.error(f"Error searching movies: {str(e)}")
+            logcurrent_app.logger.error(f"Error searching movies: {str(e)}")
             return jsonify({"error": str(e)}), 500
 
 
@@ -357,7 +362,7 @@ def delete_list(list_id):
             session.commit()
             return jsonify({'message': 'Lists deleted successfully'}), 200
         except Exception as e:
-            logging.error(f'Error deleting Lists: {e}')
+            current_app.logger.error(f'Error deleting Lists: {e}')
             return jsonify({'error': 'Failed to delete Lists'}), 500
 
 
@@ -380,30 +385,30 @@ def remove_movie_from_list(list_id):
 
     with session_scope() as session:
         data = request.get_json()
-        logging.debug(f'Received data: {data}')
+        current_app.logger.debug(f'Received data: {data}')
 
         if not data:
-            logging.error('No data provided')
+            current_app.logger.error('No data provided')
             return jsonify({'error': 'No data provided'}), 400
 
         movie_id = data.get('movie_id')
-        logging.debug(f'Movie ID: {movie_id}')
+        current_app.logger.debug(f'Movie ID: {movie_id}')
 
         if not movie_id:
-            logging.error('No movie ID provided')
+            current_app.logger.error('No movie ID provided')
             return jsonify({'error': 'No movie ID provided'}), 400
 
         list_entry = session.query(EntreeListe).filter_by(id_liste=list_id, id_metrage=movie_id).first()
         if not list_entry:
-            logging.error('Movie not found in the Lists')
+            current_app.logger.error('Movie not found in the Lists')
             return jsonify({'error': 'Movie not found in the Lists'}), 404
 
         try:
             session.delete(list_entry)
             session.commit()
-            logging.info(f'Movie {movie_id} removed from Lists {list_id}')
+            current_app.logger.info(f'Movie {movie_id} removed from Lists {list_id}')
         except Exception as e:
-            logging.error(f'Error removing movie from Lists: {e}')
+            current_app.logger.error(f'Error removing movie from Lists: {e}')
             return jsonify({'error': 'Failed to remove movie from Lists'}), 500
 
         # Fetch updated Lists details

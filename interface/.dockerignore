@@ -1,0 +1,24 @@
+# Ignorer les fichiers de configuration
+*.env
+
+# Ignorer les fichiers et répertoires de logs
+*.log
+logs/
+log/
+
+# Ignorer les fichiers de compilation
+*.class
+*.o
+*.so
+*.dll
+
+# Ignorer les répertoires spécifiques
+node_modules/
+dist/
+build/
+
+# Ignorer les fichiers temporaires
+*.tmp
+*.swp
+*.bak
+
