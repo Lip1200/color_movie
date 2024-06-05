@@ -25,7 +25,7 @@ services:
     environment:
       - FLASK_ENV=development
       - SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:filipe@db/MovieDb
-      - CHROMADB_URI=http://chromadb:8000/vec_data
+      - CHROMADB_URI=http://chromadb:8000
       - CHROMADB_STORAGE_DIR=/vec_data
     env_file:
       - .env
@@ -63,7 +63,7 @@ services:
     environment:
       CHROMADB_STORAGE_DIR: /vec_data
     volumes:
-      - ./vec_data:/vec_data
+      - ./vec_data:/chroma/chroma
     ulimits:
       nofile:
         soft: 1048576

@@ -14,7 +14,7 @@ from flask_sqlalchemy import SQLAlchemy
 from config import Config
 import chromadb
 
-chroma_client = chromadb.PersistentClient(os.getenv("CHROMADB_STORAGE_DIR"))
+chroma_client = chromadb.HttpClient(host=os.getenv("CHROMADB_URI"), port=8000)
 collection = chroma_client.get_or_create_collection(name="Movie", metadata={"hnsw:space": "cosine"})
 
 def create_app():
