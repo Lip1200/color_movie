@@ -65,7 +65,7 @@ const AddMovieForm = () => {
       <h1 className="text-2xl mb-4">Add Movie to List</h1>
         <div onClick={handleBackToHome} className="cursor-pointer">
           <Image
-            src="/public/logo.png"
+            src="../../public/logo.png"
             alt="Back to Home"
             width={50}
             height={50}

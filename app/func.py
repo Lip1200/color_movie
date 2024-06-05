@@ -8,13 +8,16 @@ from src.models.local import (
     Metrage,
     Utilisateur
 )
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     return app
+
 
 def find_similar_movies_by_vec(collection, query_vector, top_n=5):
     # Effectue une requête pour trouver les films les plus similaires
@@ -44,7 +47,7 @@ def find_similar_movies_by_id(collection, movie_id, top_n=5):
 
     # Récupère le vecteur d'embedding du film
     query_vector = result['embeddings'][0]
-    #on transforme en Lists
+    # on transforme en Lists
     query_vector = query_vector
 
     # Effectue une requête pour trouver les films les plus similaires
@@ -52,7 +55,6 @@ def find_similar_movies_by_id(collection, movie_id, top_n=5):
 
     # Retourne les IDs et les distances des films similaires
     return similar_movie_ids, similar_movie_distances
-
 
 
 def find_similar_movies_by_list_id(session, collection, list_id, top_n=5):
@@ -97,7 +99,8 @@ def find_similar_movies_by_list_id(session, collection, list_id, top_n=5):
 
     # Convertir average_vector en liste
     average_vector = average_vector.tolist()
-    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(collection, average_vector, top_n + len(rated_movie_ids))
+    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(collection, average_vector,
+                                                                            top_n + len(rated_movie_ids))
 
     # Exclure les films déjà présents dans la liste de favoris
     filtered_similar_movie_ids = [movie_id for movie_id in similar_movie_ids if int(movie_id) not in rated_movie_ids]
@@ -115,14 +118,17 @@ def get_vector(collection, movie_id):
     else:
         return None
 
+
 # Fonction pour obtenir les critiques d'un utilisateur
 def get_user_ratings(session, user_id):
     user_ratings = session.query(Critique).filter(Critique.id_utilisateur == user_id).all()
     return user_ratings
 
+
 # Fonction pour obtenir les IDs des listes d'un utilisateur
 def get_user_list_ids(session, user_id):
     return session.query(Liste.id, Liste.nom_liste).filter(Liste.id_utilisateur == user_id).all()
+
 
 # Fonction pour obtenir les détails complets d'un utilisateur
 def get_user_details(session, user_id):
@@ -146,7 +152,8 @@ def get_user_details(session, user_id):
 
     # Obtenir les critiques de l'utilisateur
     user_ratings = session.query(Critique).filter(Critique.id_utilisateur == user_id).all()
-    ratings_data = [{"movie_id": rating.id_metrage, "note": rating.note, "comment": rating.commentaire} for rating in user_ratings]
+    ratings_data = [{"movie_id": rating.id_metrage, "note": rating.note, "comment": rating.commentaire} for rating in
+                    user_ratings]
 
     user_data = {
         "user_id": user.id,
@@ -164,5 +171,24 @@ def search_movie_by_title(session, title):
     for movie in movies:
         directors = [credit.personne.nom for credit in movie.credits if credit.fonction == 'Director']
         actors = [credit.personne.nom for credit in movie.credits if credit.fonction == 'Actor']
-        movie_details.append({"title": movie.titre, "year": movie.annee, "directors": directors, "actors": actors, "synopsis": movie.synopsis})
+        movie_details.append({"title": movie.titre, "year": movie.annee, "directors": directors, "actors": actors,
+                              "synopsis": movie.synopsis})
     return movie_details
+
+
+def jsonify_movies(session, similar_movie_ids):
+    if not similar_movie_ids:
+        return jsonify({"message": "No similar movies found."}), 404
+    sim_movies = []
+    for movie_id in similar_movie_ids:
+        movie = session.get(Metrage, movie_id)
+        if movie:
+            sim_movies.append({
+                'id': movie.id,
+                'title': movie.titre,
+                'release_year': movie.annee,
+                'type': movie.type,
+                'synopsis': movie.synopsis,
+                'note_moyenne': movie.note_moyenne
+            })
+    return jsonify({"similar_movies": sim_movies})

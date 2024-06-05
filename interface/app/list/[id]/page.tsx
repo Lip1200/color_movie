@@ -107,22 +107,22 @@ const ListPage = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-100">
       <Header />
       <div className="p-4">
         {error && <p className="text-red-500">{error}</p>}
         {listDetails ? (
           <>
-            <h1 className="text-2xl mb-4">{listDetails.list_name}</h1>
-            <ul>
+            <h1 className="text-2xl font-bold mb-4 text-center">{listDetails.list_name}</h1>
+            <ul className="space-y-2">
               {listDetails.movies.map((movie) => (
-                <li key={movie.id} className="flex justify-between items-center mb-2">
+                <li key={movie.id} className="flex justify-between items-center bg-white p-4 rounded shadow">
                   <span className="cursor-pointer text-blue-500 hover:underline" onClick={() => router.push(`/movies/${movie.id}`)}>
                     {movie.title} ({movie.release_year})
                   </span>
                   <button
                     onClick={() => removeMovieFromList(movie.id)}
-                    className="bg-red-500 text-white p-1 rounded ml-2"
+                    className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-700"
                   >
                     Remove
                   </button>
@@ -131,18 +131,18 @@ const ListPage = () => {
             </ul>
             <button
               onClick={fetchSimilarMovies}
-              className="bg-green-500 text-white p-2 rounded mt-4"
+              className="bg-green-500 text-white py-2 px-4 rounded mt-4 hover:bg-green-700"
             >
               Suggest Similar Movies
             </button>
             {similarMovies.length > 0 && (
               <div className="mt-4">
-                <h2 className="text-xl mb-2">Similar Movies</h2>
-                <ul className="border p-2 mt-2">
+                <h2 className="text-xl font-bold mb-2">Similar Movies</h2>
+                <ul className="space-y-2 bg-white p-4 rounded shadow">
                   {similarMovies.map((similarMovie) => (
                     <li
                       key={similarMovie.id}
-                      className="cursor-pointer mb-2 hover:bg-gray-200"
+                      className="cursor-pointer hover:bg-gray-200 p-2 rounded"
                       onClick={() => handleSimilarMovieClick(similarMovie.id)}
                     >
                       {similarMovie.title} ({similarMovie.release_year})

@@ -22,8 +22,24 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  .btn-primary {
+    @apply bg-primary text-white font-bold py-2 px-4 rounded;
+    transition: background-color 0.3s;
+  }
+  .btn-primary:hover {
+    @apply bg-green-700;
+  }
+  .btn-secondary {
+    @apply bg-secondary text-white font-bold py-2 px-4 rounded;
+    transition: background-color 0.3s;
+  }
+  .btn-secondary:hover {
+    @apply bg-red-700;
+  }
+  .highlight {
+    background-color: var(--tw-color-highlight);
+  }
 }
-
 .login-title {
   @apply text-2xl font-bold;
 }

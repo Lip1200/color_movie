@@ -161,7 +161,7 @@ const UserPage = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-100">
       <Header />
       <div className="p-4">
         {error && <p className="text-red-500">{error}</p>}
@@ -170,10 +170,10 @@ const UserPage = () => {
             type="text"
             value={newListName}
             onChange={(e) => setNewListName(e.target.value)}
-            className="p-2 border border-gray-300 rounded"
+            className="p-2 border border-gray-300 rounded w-full md:w-1/2"
             placeholder="New list name"
           />
-          <button onClick={handleCreateList} className="bg-green-500 text-white p-2 rounded ml-2">
+          <button onClick={handleCreateList} className="bg-green-500 text-white py-2 px-4 rounded ml-2 hover:bg-green-700">
             Create List
           </button>
         </div>
@@ -185,15 +185,15 @@ const UserPage = () => {
               setSearchTerm(e.target.value);
               handleSearch(e.target.value);
             }}
-            className="p-2 border border-gray-300 rounded"
+            className="p-2 border border-gray-300 rounded w-full md:w-1/2"
             placeholder="Search movies"
           />
           {searchResults.length > 0 && (
-            <ul className="border border-gray-300 rounded mt-2 max-h-60 overflow-y-auto">
+            <ul className="border border-gray-300 rounded mt-2 max-h-60 overflow-y-auto bg-white p-2 space-y-2 shadow">
               {searchResults.map((movie) => (
                 <li
                   key={movie.id}
-                  className="p-2 hover:bg-gray-200 cursor-pointer"
+                  className="p-2 hover:bg-gray-200 cursor-pointer rounded"
                   onClick={() => handleMovieClick(movie.id)}
                 >
                   {movie.title} ({movie.release_year})
@@ -203,12 +203,12 @@ const UserPage = () => {
           )}
         </div>
         <div>
-          <h2 className="text-xl mb-4">My Lists</h2>
+          <h2 className="text-xl font-bold mb-4">My Lists</h2>
           {loading ? (
             <p>Loading...</p>
           ) : lists.length > 0 ? (
             lists.map((list) => (
-              <div key={list.list_id} className="mb-4 p-4 border border-gray-300 rounded">
+              <div key={list.list_id} className="mb-4 p-4 border border-gray-300 rounded bg-white shadow">
                 <h3
                   className="text-lg font-bold cursor-pointer text-blue-500 hover:underline"
                   onClick={() => handleListClick(list.list_id)}
@@ -217,13 +217,13 @@ const UserPage = () => {
                 </h3>
                 <button
                   onClick={() => handleDeleteList(list.list_id)}
-                  className="bg-red-500 text-white p-1 rounded mt-2"
+                  className="bg-red-500 text-white py-1 px-3 rounded mt-2 hover:bg-red-700"
                 >
                   Delete List
                 </button>
-                <ul>
-                  {list.movies.length > 0 ? (
-                    list.movies.map((movie) => (
+                {list.movies.length > 0 ? (
+                  <ul className="mt-2 space-y-2">
+                    {list.movies.map((movie) => (
                       <li
                         key={movie.id}
                         className="flex justify-between items-center cursor-pointer text-blue-500 hover:underline"
@@ -231,11 +231,11 @@ const UserPage = () => {
                       >
                         {movie.title} ({movie.release_year})
                       </li>
-                    ))
-                  ) : (
-                    <p>No movies in this list.</p>
-                  )}
-                </ul>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2">No movies in this list.</p>
+                )}
               </div>
             ))
           ) : (
