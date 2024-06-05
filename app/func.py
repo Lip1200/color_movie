@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from sqlalchemy.orm import joinedload
 from src.models.local import (
@@ -8,10 +9,13 @@ from src.models.local import (
     Metrage,
     Utilisateur
 )
-from flask import Flask, jsonify
+from flask import Flask, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
+import chromadb
 
+chroma_client = chromadb.PersistentClient(os.getenv("CHROMADB_STORAGE_DIR"))
+collection = chroma_client.get_or_create_collection(name="Movie", metadata={"hnsw:space": "cosine"})
 
 def create_app():
     app = Flask(__name__)
@@ -20,13 +24,17 @@ def create_app():
 
 
 def find_similar_movies_by_vec(collection, query_vector, top_n=5):
+    current_app.logger.debug(f"Querying collection with vector: {query_vector}")
     # Effectue une requête pour trouver les films les plus similaires
     results = collection.query(
         query_embeddings=[query_vector],
         n_results=top_n,
         include=["embeddings", "distances"]
     )
+    current_app.logger.debug(f"Query results: {results}")
+
     if not results['ids']:
+        current_app.logger.error(f"No similar Movie found for the given vector.")
         raise ValueError(f"No similar Movie found for the given vector.")
 
     similar_movie_ids = results['ids'][0]
@@ -38,20 +46,23 @@ def find_similar_movies_by_vec(collection, query_vector, top_n=5):
 
 # Fonction pour trouver les films similaires à partir de l'ID du film
 def find_similar_movies_by_id(collection, movie_id, top_n=5):
+    current_app.logger.debug(f"Finding similar movies for movie ID: {movie_id}")
     # Récupère le vecteur d'embedding du film donné dans ChromaDB
     result = get_vector(collection, movie_id)
+    current_app.logger.debug(f"Embedding result for movie ID {movie_id}: {result}")
 
     # Vérifie si le film a été trouvé dans la collection
     if not result or 'embeddings' not in result or not result['embeddings']:
+        current_app.logger.error(f"Movie ID {movie_id} not found in the collection.")
         raise ValueError(f"Movie ID {movie_id} not found in the collection.")
 
     # Récupère le vecteur d'embedding du film
     query_vector = result['embeddings'][0]
-    # on transforme en Lists
-    query_vector = query_vector
+    current_app.logger.debug(f"Query vector for movie ID {movie_id}: {query_vector}")
 
     # Effectue une requête pour trouver les films les plus similaires
     similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(collection, query_vector, top_n)
+    current_app.logger.debug(f"Similar movie IDs: {similar_movie_ids}, distances: {similar_movie_distances}")
 
     # Retourne les IDs et les distances des films similaires
     return similar_movie_ids, similar_movie_distances
@@ -112,10 +123,18 @@ def find_similar_movies_by_list_id(session, collection, list_id, top_n=5):
 
 # Fonction pour obtenir le vecteur d'un film
 def get_vector(collection, movie_id):
-    results = collection.get(ids=[str(movie_id)], include=['embeddings'])
-    if 'embeddings' in results and results['embeddings']:
-        return results
-    else:
+    current_app.logger.debug(f"Getting vector for movie ID: {movie_id}")
+    try:
+        results = collection.get(ids=[str(movie_id)], include=["embeddings"])
+        current_app.logger.debug(f"Results from collection.get: {results}")
+
+        if 'embeddings' in results and results['embeddings']:
+            return results
+        else:
+            current_app.logger.error(f"Embeddings not found in the results for movie ID {movie_id}")
+            return None
+    except Exception as e:
+        current_app.logger.error(f"An error occurred while getting vector for movie ID {movie_id}: {str(e)}")
         return None
 
 

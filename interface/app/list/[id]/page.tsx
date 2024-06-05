@@ -79,6 +79,7 @@ const ListPage = () => {
     }
   }, [id]);
 
+
   const removeMovieFromList = async (movieId: number) => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;

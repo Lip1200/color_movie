@@ -1,7 +1,7 @@
 import '@/../app/globals.css';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import logo from '@/../public/Logo.png'
+import logo from '@/../public/Logo.png';
 
 const Header = () => {
   const router = useRouter();
@@ -11,13 +11,14 @@ const Header = () => {
   };
 
   return (
-    <div className="w-full py-4 bg-gray-800 flex justify-center items-center shadow-md">
-      <div onClick={handleLogoClick} className="cursor-pointer bg-white p-2 rounded-full hover:bg-gray-200 transition duration-300">
+    <div className="w-full py-2 bg-pink-400 flex justify-center items-center shadow-md">
+      <div onClick={handleLogoClick} className="cursor-pointer bg-white p-0 rounded-full hover:bg-gray-200 transition duration-300 flex items-center justify-center" style={{ width: '100px', height: '100px' }}>
         <Image
           src={logo}
           alt="Logo"
-          width={300}
-          height={300}
+          width={120}
+          height={120}
+          className="rounded-full"
         />
       </div>
     </div>

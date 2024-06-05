@@ -19,6 +19,7 @@ RUN apt-get update && \
 RUN pip3 install --upgrade pip setuptools
 RUN pip3 install numpy
 
+
 # Créer et définir le répertoire de travail
 RUN mkdir /app
 WORKDIR /app
