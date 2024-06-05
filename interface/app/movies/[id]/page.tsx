@@ -4,7 +4,7 @@ import { useRouter, useParams } from 'next/navigation';
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import Header from '@/components/Header'; // Adjust the path if necessary
+import Header from '@/components/Header'; // Ajuster le chemin si nécessaire
 
 interface Movie {
   id: number;
@@ -24,7 +24,7 @@ const MoviePage = () => {
   const [movie, setMovie] = useState<Movie | null>(null);
   const [lists, setLists] = useState<List[]>([]);
   const [selectedList, setSelectedList] = useState<number | null>(null);
-  const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
+  const [similarMovies, setSimilarMovies] = useState<{ id: number; titre: string; annee: number; }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { id } = useParams();
@@ -68,7 +68,11 @@ const MoviePage = () => {
         },
       });
 
-      setSimilarMovies(response.data.similar_movies);
+      setSimilarMovies(response.data.similar_movies.map((movie: any) => ({
+        id: movie.id,
+        titre: movie.title,
+        annee: movie.release_year,
+      })));
     } catch (err: any) {
       console.error('Error fetching similar movies:', err);
       setError(err.response?.data?.message || 'Failed to fetch similar movies');

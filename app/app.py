@@ -20,7 +20,6 @@ from src.models.local import (
 )
 import numpy as np
 import chromadb
-from chromadb.config import Settings
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from func import (
@@ -45,7 +44,7 @@ engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
 Session = sessionmaker(bind=engine)
 
 # Configuration de ChromaDB
-chroma_client = chromadb.PersistentClient(os.getenv("CHROMADB_STORAGE_DIR"))
+chroma_client = chromadb.HttpClient(host=os.getenv("CHROMADB_URI"), port=8000)
 collection = chroma_client.get_or_create_collection(name="Movie", metadata={"hnsw:space": "cosine"})
 
 # Création de l'application app
