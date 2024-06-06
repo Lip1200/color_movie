@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .btn-primary {
+    @apply bg-primary text-white font-bold py-2 px-4 rounded;
+    transition: background-color 0.3s;
+  }
+  .btn-primary:hover {
+    @apply bg-green-700;
+  }
+  .btn-secondary {
+    @apply bg-secondary text-white font-bold py-2 px-4 rounded;
+    transition: background-color 0.3s;
+  }
+  .btn-secondary:hover {
+    @apply bg-red-700;
+  }
+  .highlight {
+    background-color: var(--tw-color-highlight);
+  }
+}
+.login-title {
+  @apply text-2xl font-bold;
+}
