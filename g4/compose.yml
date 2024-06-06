@@ -1,0 +1,85 @@
+services:
+  nextjs:
+    build:
+      context: ./interface
+      dockerfile: Dockerfile
+    environment:
+      - API_URL=http://flask:5001
+    volumes:
+      - ./interface:/app
+      - node_cache:/app/node_modules
+      - next_cache:/app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      - flask
+    networks:
+      - app_network
+
+  flask:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: flask
+    restart: always
+    environment:
+      - FLASK_ENV=development
+      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:REDACTED@db/MovieDb
+      - CHROMADB_URI=http://chromadb:8000
+      - CHROMADB_STORAGE_DIR=/vec_data
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app
+    ports:
+      - "5001:5001"
+    depends_on:
+      - db
+      - chromadb
+    networks:
+      - app_network
+
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: REDACTED
+      MYSQL_USER: REDACTED
+      MYSQL_PASSWORD: REDACTED
+      MYSQL_ROOT_PASSWORD: REDACTED
+    volumes:
+      - ./MovieDb.sql:/docker-entrypoint-initdb.d/MovieDb.sql
+      - db:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    expose:
+      - 3306
+    networks:
+      - app_network
+
+  chromadb:
+    image: chromadb/chroma
+    restart: always
+    environment:
+      CHROMADB_STORAGE_DIR: /vec_data
+    volumes:
+      - ./vec_data:/chroma/chroma
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    ports:
+      - "8000:8000"
+    expose:
+      - 8000
+    networks:
+      - app_network
+
+volumes:
+  db:
+  node_cache:
+  next_cache:
+
+networks:
+  app_network:
+    driver: bridge
