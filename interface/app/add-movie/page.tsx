@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import Image from 'next/image';
+import Header from '@/components/Header'; // Ajustez le chemin si nécessaire
 
 const AddMovieForm = () => {
   const router = useRouter();
@@ -14,97 +14,76 @@ const AddMovieForm = () => {
   const [note, setNote] = useState<number | null>(null);
   const [comment, setComment] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!id || !list_id) {
-      setError('Movie ID or List ID is missing.');
-    }
-  }, [id, list_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (note === null) {
-      setError('Please provide a rating.');
+    if (note === null || id === null || list_id === null) {
+      setError('Please provide all required information.');
       return;
     }
 
-    setLoading(true);
+    const payload = { movie_id: id, note, comment };
+    console.log('Sending data:', payload);
+
     try {
       const token = Cookies.get('token');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      console.log(`Posting to ${apiUrl}/list/${list_id}/add_movie with movie_id: ${id}, note: ${note}, comment: ${comment}`);
+      if (!token) {
+        setError('No token found. Please login.');
+        return;
+      }
+      console.log('JWT Token:', token);
+
       const response = await axios.post(
-        `${apiUrl}/list/${list_id}/add_movie`,
-        { movie_id: id, note, comment },
+        `http://localhost:5001/list/${list_id}/add_movie`,
+        payload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
         }
       );
 
-      if (response.status === 201) {
-        router.push(`/list/${list_id}`);
-      } else {
-        setError('Failed to add movie to the list.');
-      }
+      console.log('Response:', response);
+      router.push(`/list/${list_id}`);
     } catch (err: any) {
-      console.error('Error adding movie to list:', err);
-      setError(err.response?.data?.message || 'An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+      setError('Error adding movie to list');
+      console.error('Error response:', err.response?.data || err.message);
     }
-  };
-    const handleBackToHome = () => {
-    router.push('/dashboard');
   };
 
   return (
-    <div className="min-h-screen p-4">
-      <h1 className="text-2xl mb-4">Add Movie to List</h1>
-        <div onClick={handleBackToHome} className="cursor-pointer">
-          <Image
-            src="../../public/logo.png"
-            alt="Back to Home"
-            width={50}
-            height={50}
-          />
-        </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="note" className="block text-sm font-medium text-gray-700">
-            Rating:
-          </label>
-          <input
-            id="note"
-            name="note"
-            type="number"
-            value={note ?? ''}
-            onChange={(e) => setNote(Number(e.target.value))}
-            required
-            min="0"
-            max="10"
-            className="mt-1 p-2 block w-full border border-gray-300 rounded-md"
-          />
-        </div>
-        <div>
-          <label htmlFor="comment" className="block text-sm font-medium text-gray-700">
-            Comment:
-          </label>
-          <textarea
-            id="comment"
-            name="comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            className="mt-1 p-2 block w-full border border-gray-300 rounded-md"
-          />
-        </div>
-        <button type="submit" className="bg-green-500 text-white p-2 rounded" disabled={loading || !id || !list_id}>
-          {loading ? 'Submitting...' : 'Submit'}
-        </button>
-        {error && <p className="text-red-500">{error}</p>}
-      </form>
+    <div className="min-h-screen bg-gray-100">
+      <Header /> {/* Inclusion du composant Header */}
+      <div className="p-4">
+        <h1 className="text-2xl font-bold mb-4">Add Movie to List</h1>
+        <form onSubmit={handleSubmit}>
+          <div>
+            <label>Rating:</label>
+            <input
+              type="number"
+              value={note ?? ''}
+              onChange={(e) => setNote(Number(e.target.value))}
+              required
+              min="0"
+              max="10"
+              className="p-2 border border-gray-300 rounded w-full"
+            />
+          </div>
+          <div>
+            <label>Comment:</label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="p-2 border border-gray-300 rounded w-full"
+            />
+          </div>
+          <button type="submit" className="bg-green-500 text-white p-2 rounded mt-4">
+            Submit
+          </button>
+          {error && <p className="text-red-500">{error}</p>}
+        </form>
+      </div>
     </div>
   );
 };

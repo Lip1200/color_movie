@@ -11,9 +11,10 @@ interface Movie {
   title: string;
   release_year: number;
   director: string;
-  casting: string[];
   synopsis?: string;
   note_moyenne?: number;
+  note?: number;
+  comment?: string;
 }
 
 interface ListDetails {
@@ -36,17 +37,21 @@ const ListPage = () => {
           Authorization: `Bearer ${Cookies.get('token')}`,
         },
       });
+
+      const data = response.data;
+      const movies = data.Movie.map((movie: any) => ({
+        id: movie.id,
+        title: movie.title,
+        release_year: movie.release_date,
+        director: movie.director,
+        synopsis: movie.synopsis,
+        note_moyenne: movie.note_moyenne,
+        note: movie.note,
+        comment: movie.comment,
+      }));
       setListDetails({
-        list_name: response.data.list_name,
-        movies: response.data.Movie.map((movie: any) => ({
-          id: movie.id,
-          title: movie.title,
-          release_year: movie.release_date,
-          director: movie.director,
-          synopsis: movie.synopsis,
-          casting: movie.casting,
-          note_moyenne: movie.note_moyenne,
-        })),
+        list_name: data.list_name || 'Unnamed List',
+        movies: movies || [],
       });
     } catch (err: any) {
       console.error('Error fetching list details:', err);
@@ -117,16 +122,24 @@ const ListPage = () => {
             <h1 className="text-2xl font-bold mb-4 text-center">{listDetails.list_name}</h1>
             <ul className="space-y-2">
               {listDetails.movies.map((movie) => (
-                <li key={movie.id} className="flex justify-between items-center bg-white p-4 rounded shadow">
-                  <span className="cursor-pointer text-blue-500 hover:underline" onClick={() => router.push(`/movies/${movie.id}`)}>
-                    {movie.title} ({movie.release_year})
-                  </span>
-                  <button
-                    onClick={() => removeMovieFromList(movie.id)}
-                    className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-700"
-                  >
-                    Remove
-                  </button>
+                <li key={movie.id} className="flex flex-col bg-white p-4 rounded shadow">
+                  <div className="flex justify-between items-center">
+                    <span className="cursor-pointer text-blue-500 hover:underline" onClick={() => router.push(`/movies/${movie.id}`)}>
+                      {movie.title} ({movie.release_year})
+                    </span>
+                    <button
+                      onClick={() => removeMovieFromList(movie.id)}
+                      className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  {movie.note !== undefined && movie.note !== null && (
+                    <div className="mt-2">
+                      <p>Rating: {movie.note}</p>
+                      <p>Comment: {movie.comment}</p>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
