@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/Header'; // Adjust the path if necessary
+import Header from '@/components/Header';
 
 interface Movie {
   id: number;
@@ -17,10 +17,10 @@ interface Movie {
 interface List {
   list_id: number;
   list_name: string;
-  movies: Movie[];
+  is_empty: boolean;
 }
 
-const UserPage = () => {
+const UserPageContent = () => {
   const [lists, setLists] = useState<List[]>([]);
   const [newListName, setNewListName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,12 +44,8 @@ const UserPage = () => {
           Authorization: `Bearer ${Cookies.get('token')}`,
         },
       });
-      const listsData = response.data || [];
-      const validatedLists = listsData.map((list: any) => ({
-        ...list,
-        movies: Array.isArray(list.movies) ? list.movies : [],
-      }));
-      setLists(validatedLists);
+      console.log('Fetched lists:', response.data);
+      setLists(response.data || []);
     } catch (error: any) {
       console.error('Error fetching user lists', error);
       setError(error.response?.data?.message || 'Failed to fetch user lists.');
@@ -91,7 +87,7 @@ const UserPage = () => {
   const handleCreateList = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await axios.post(
+      await axios.post(
         `${apiUrl}/lists`,
         { name: newListName },
         {
@@ -101,7 +97,7 @@ const UserPage = () => {
         }
       );
       setNewListName('');
-      setLists([...lists, response.data.list]);
+      fetchUserLists(); // Re-fetch user lists after creating a new list
       alert('List created successfully');
     } catch (error: any) {
       console.error('Error creating list', error);
@@ -221,20 +217,10 @@ const UserPage = () => {
                 >
                   Delete List
                 </button>
-                {list.movies.length > 0 ? (
-                  <ul className="mt-2 space-y-2">
-                    {list.movies.map((movie) => (
-                      <li
-                        key={movie.id}
-                        className="flex justify-between items-center cursor-pointer text-blue-500 hover:underline"
-                        onClick={() => handleMovieClick(movie.id)}
-                      >
-                        {movie.title} ({movie.release_year})
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
+                {list.is_empty ? (
                   <p className="mt-2">No movies in this list.</p>
+                ) : (
+                  <p className="mt-2">This list has movies.</p>
                 )}
               </div>
             ))
@@ -246,5 +232,11 @@ const UserPage = () => {
     </div>
   );
 };
+
+const UserPage = () => (
+  <Suspense fallback={<div>Loading...</div>}>
+    <UserPageContent />
+  </Suspense>
+);
 
 export default UserPage;
