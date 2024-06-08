@@ -9,7 +9,7 @@ class Liste(Base):
     __tablename__ = "liste"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    id_utilisateur: Mapped[int] = mapped_column(ForeignKey("utilisateur.id"))
+    id_utilisateur: Mapped[int] = mapped_column(ForeignKey("utilisateur.id", ondelete='CASCADE'))
 
     utilisateur: Mapped[Utilisateur] = relationship(back_populates="listes")
     nom_liste: Mapped[str] = mapped_column(String(50))
