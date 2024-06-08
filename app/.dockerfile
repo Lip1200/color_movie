@@ -6,10 +6,8 @@
 *.log
 
 # Ignore les fichiers temporaires et de cache
-node_modules/
-npm-debug.log
-yarn-error.log
-.pnpm-debug.log
+*.pyc
+__pycache__/
 *.swp
 *~
 *.bak
@@ -22,9 +20,15 @@ yarn-error.log
 # Ignore les répertoires de build locaux
 build/
 dist/
-.next/
 
 # Ignore les fichiers spécifiques à Docker
 Dockerfile
 .dockerignore
+
+# Ignore les répertoires virtuels Python
+venv/
+env/
+ENV/
+.venv/
+.env
 

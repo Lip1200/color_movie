@@ -136,8 +136,11 @@ def get_movies():
 @jwt_required()
 def get_list_details(list_id):
     with session_scope() as session:
+        liste = session.query(Liste).filter(Liste.id == list_id).one_or_none()
+        if not liste:
+            return jsonify({'message': 'List not found'}), 404
+
         list_details = session.query(
-            Liste.nom_liste.label('list_name'),
             Metrage.id.label('movie_id'),
             Metrage.titre.label('movie_title'),
             Metrage.annee.label('release_date'),
@@ -145,32 +148,31 @@ def get_list_details(list_id):
             Critique.note.label('note'),
             Critique.commentaire.label('comment')
         ).join(
-            EntreeListe, Liste.id == EntreeListe.id_liste
-        ).join(
-            Metrage, EntreeListe.id_metrage == Metrage.id
+            EntreeListe, EntreeListe.id_metrage == Metrage.id
         ).join(
             Credit, (Metrage.id == Credit.id_metrage) & (Credit.fonction == 'Director')
         ).join(
             Personne, Credit.id_personne == Personne.id
         ).outerjoin(
-            Critique, (Metrage.id == Critique.id_metrage) & (Liste.id_utilisateur == Critique.id_utilisateur)
+            Critique, (Metrage.id == Critique.id_metrage) & (EntreeListe.id_liste == list_id) & (Critique.id_utilisateur == liste.id_utilisateur)
         ).filter(
-            Liste.id == list_id
+            EntreeListe.id_liste == list_id
         ).all()
 
         if not list_details:
             return jsonify({
-                'list_name': '',
-                'Movie': []
+                'list_name': liste.nom_liste,
+                'movies': []
             })
 
         data = {
-            'list_name': list_details[0].list_name,
-            'Movie': [{'id': result.movie_id, 'title': result.movie_title, 'release_date': result.release_date,
-                       'director': result.director_name, 'note': result.note, 'comment': result.comment} for result in list_details]
+            'list_name': liste.nom_liste,
+            'movies': [{'id': movie.movie_id, 'title': movie.movie_title, 'release_date': movie.release_date,
+                        'director': movie.director_name, 'note': movie.note, 'comment': movie.comment} for movie in list_details]
         }
 
         return jsonify(data)
+
 
 
 @app.route('/user/<int:user_id>/ratings', methods=['GET'])
@@ -325,17 +327,18 @@ def create_list():
 
         return jsonify({'message': 'Lists created', 'Lists': {'id': new_list.id, 'name': new_list.nom_liste}}), 201
 
+
 @app.route('/list/<int:list_id>/add_movie', methods=['POST'])
 @jwt_required()
 def add_movie_to_list(list_id):
     data = request.get_json()
     current_app.logger.debug(f"Received data: {data}")
+    user_identity = get_jwt_identity()
+    user_id = user_identity['user_id']
 
     movie_id = data.get('movie_id')
     note = data.get('note')
     comment = data.get('comment')
-
-    current_app.logger.debug(f"movie_id: {movie_id}, note: {note}, comment: {comment}")
 
     if not movie_id or note is None:
         current_app.logger.error(f"Missing movie_id or note: movie_id={movie_id}, note={note}")
@@ -344,28 +347,24 @@ def add_movie_to_list(list_id):
     with session_scope() as session:
         movie = session.get(Metrage, movie_id)
         liste = session.get(Liste, list_id)
-        if not movie:
-            current_app.logger.error(f"Movie not found: {movie_id}")
-            return jsonify({'error': 'Movie not found.'}), 404
+        if not movie or not liste:
+            error_message = 'Movie not found.' if not movie else 'List not found.'
+            current_app.logger.error(f"{error_message} ID: {movie_id if not movie else list_id}")
+            return jsonify({'error': error_strings}), 404
 
-        if not liste:
-            current_app.logger.error(f"List not found: {list_id}")
-            return jsonify({'error': 'List not found.'}), 404
-
-        try:
-            list_entry = EntreeListe(id_liste=list_id, id_metrage=movie.id)
-            critique = Critique(id_utilisateur=liste.id_utilisateur, id_metrage=movie.id, note=note, commentaire=comment)
-            session.add(list_entry)
+        critique = session.query(Critique).filter_by(id_metrage=movie_id, id_utilisateur=user_id).first()
+        if critique:
+            critique.note = note
+            critique.commentaire = comment
+        else:
+            critique = Critique(id_utilisateur=user_id, id_metrage=movie_id, note=note, commentaire=comment)
             session.add(critique)
-            session.commit()
+            list_entry = EntreeListe(id_liste=list_id, id_metrage=movie_id)
+            session.add(list_entry)
 
-            current_app.logger.debug(f"Movie {movie_id} added to list {list_id}")
-
-            return jsonify({'message': 'Movie added to list.'}), 201
-
-        except Exception as e:
-            current_app.logger.error(f"Error adding movie to list: {str(e)}")
-            return jsonify({'error': 'Error adding movie to list.'}), 500
+        session.commit()
+        current_app.logger.debug(f"Movie {movie_id} added to list {list_id} with new/updated critique.")
+        return jsonify({'message': 'Movie added to list with new/updated critique.'}), 201
 
 
 @app.route('/search_movies', methods=['GET'])

@@ -31,7 +31,6 @@ const AddMovieForm = () => {
         setError('No token found. Please login.');
         return;
       }
-      console.log('JWT Token:', token);
 
       const response = await axios.post(
         `http://localhost:5001/list/${list_id}/add_movie`,
@@ -39,7 +38,8 @@ const AddMovieForm = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
           },
         }
       );

@@ -22,32 +22,39 @@ interface ListDetails {
   movies: Movie[];
 }
 
-const ListPage = () => {
-  const [listDetails, setListDetails] = useState<ListDetails | null>(null);
-  const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const { id } = useParams();  // Ensure we are using `id` as the parameter name.
+  const ListPage = () => {
+    const [listDetails, setListDetails] = useState<ListDetails | null>(null);
+    const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
+    const { id } = useParams();  // Ensure we are using `id` as the parameter name.
 
-  const fetchListDetails = useCallback(async () => {
+    const fetchListDetails = useCallback(async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const token = Cookies.get('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
       const response = await axios.get(`${apiUrl}/list/${id}`, {
         headers: {
-          Authorization: `Bearer ${Cookies.get('token')}`,
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache'
         },
       });
 
       const data = response.data;
-      const movies = data.Movie.map((movie: any) => ({
+      console.log("API Data:", data);
+
+      const movies = data.movies.map((movie: any) => ({
         id: movie.id,
         title: movie.title,
         release_year: movie.release_date,
         director: movie.director,
-        synopsis: movie.synopsis,
-        note_moyenne: movie.note_moyenne,
-        note: movie.note,
-        comment: movie.comment,
+        synopsis: movie.synopsis || '',
+        note_moyenne: movie.note_moyenne || 0,
+        note: movie.note || 0,
+        comment: movie.comment || '',
       }));
       setListDetails({
         list_name: data.list_name || 'Unnamed List',
@@ -58,6 +65,7 @@ const ListPage = () => {
       setError(err.response?.data?.message || 'Failed to fetch list details');
     }
   }, [id]);
+
 
   const fetchSimilarMovies = useCallback(async () => {
     if (!id) {
@@ -91,6 +99,8 @@ const ListPage = () => {
       await axios.delete(`${apiUrl}/list/${id}/remove_movie`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
+          'Cache-Control': 'no-cache'
+
         },
         data: { movie_id: movieId },
       });
@@ -107,6 +117,11 @@ const ListPage = () => {
       fetchListDetails();
     }
   }, [id, fetchListDetails]);
+
+  useEffect(() => {
+    console.log("List Details:", listDetails);
+  }, [listDetails]);
+
 
   const handleSimilarMovieClick = (movieId: number) => {
     router.push(`/movies/${movieId}`);

@@ -1,12 +1,11 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Column, String, Boolean
 from .base import Base
-from flask_login import UserMixin
 from flask_bcrypt import Bcrypt
 
 bcrypt = Bcrypt()
 
-class Utilisateur(Base, UserMixin):
+class Utilisateur(Base):
     __tablename__ = "utilisateur"
 
     id: Mapped[int] = mapped_column(primary_key=True)
