@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter, useParams } from 'next/navigation';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import Header from '@/components/Header';
+import Header from '@/components/Header'; // Ajuster le chemin si nécessaire
 
 interface Movie {
   id: number;
@@ -24,6 +24,7 @@ const MoviePage = () => {
   const [movie, setMovie] = useState<Movie | null>(null);
   const [lists, setLists] = useState<List[]>([]);
   const [selectedList, setSelectedList] = useState<number | null>(null);
+  const [similarMovies, setSimilarMovies] = useState<{ id: number; titre: string; annee: number; }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { id } = useParams();
@@ -51,12 +52,32 @@ const MoviePage = () => {
           Authorization: `Bearer ${Cookies.get('token')}`,
         },
       });
-      setLists(response.data || []);
+      setLists(response.data || []); // Default to an empty array if data is null
     } catch (err: any) {
       console.error('Error fetching user lists:', err);
       setError(err.response?.data?.message || 'Failed to fetch user lists');
     }
   }, []);
+
+  const fetchSimilarMovies = useCallback(async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.get(`${apiUrl}/similar_movies/${id}`, {
+        headers: {
+          Authorization: `Bearer ${Cookies.get('token')}`,
+        },
+      });
+
+      setSimilarMovies(response.data.similar_movies.map((movie: any) => ({
+        id: movie.id,
+        titre: movie.title,
+        annee: movie.release_year,
+      })));
+    } catch (err: any) {
+      console.error('Error fetching similar movies:', err);
+      setError(err.response?.data?.message || 'Failed to fetch similar movies');
+    }
+  }, [id]);
 
   useEffect(() => {
     if (id) {
@@ -74,8 +95,15 @@ const MoviePage = () => {
       return;
     }
 
-    console.log(`Navigating to /add-movie?id=${id}&list_id=${selectedList}`);
     router.push(`/add-movie?id=${id}&list_id=${selectedList}`);
+  };
+
+  const handleSuggestSimilar = () => {
+    fetchSimilarMovies();
+  };
+
+  const handleSimilarMovieClick = (movieId: number) => {
+    router.push(`/movies/${movieId}`);
   };
 
   if (error) {
@@ -102,16 +130,35 @@ const MoviePage = () => {
             className="p-2 border border-gray-300 rounded w-full md:w-1/2 lg:w-1/3"
           >
             <option value="" disabled>Select a list to add this movie</option>
-            {lists.map((list) => (
-              <option key={list.id} value={list.id}>{list.nom_liste}</option>
-            ))}
+            {lists.length > 0 ? (
+              lists.map((list) => (
+                <option key={list.id} value={list.id}>{list.nom_liste}</option>
+              ))
+            ) : (
+              <option disabled>No lists found</option>
+            )}
           </select>
           <div className="flex mt-4 space-x-2">
             <button onClick={handleAddToList} className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">
               Add to List
             </button>
+            <button onClick={handleSuggestSimilar} className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-700">
+              Suggest Similar Movies
+            </button>
           </div>
         </div>
+        {similarMovies.length > 0 && (
+          <div className="mt-4">
+            <h2 className="text-xl font-bold mb-2">Similar Movies</h2>
+            <ul className="border p-2 mt-2 rounded shadow bg-white space-y-2">
+              {similarMovies.map((similarMovie) => (
+                <li key={similarMovie.id} className="cursor-pointer p-2 hover:bg-gray-200 rounded" onClick={() => handleSimilarMovieClick(similarMovie.id)}>
+                  {similarMovie.titre} ({similarMovie.annee})
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
