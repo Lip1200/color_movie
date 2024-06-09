@@ -11,9 +11,10 @@ interface Movie {
   title: string;
   release_year: number;
   director: string;
-  casting: string[];
   synopsis?: string;
   note_moyenne?: number;
+  note?: number;
+  comment?: string;
 }
 
 interface ListDetails {
@@ -21,38 +22,50 @@ interface ListDetails {
   movies: Movie[];
 }
 
-const ListPage = () => {
-  const [listDetails, setListDetails] = useState<ListDetails | null>(null);
-  const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const { id } = useParams();  // Ensure we are using `id` as the parameter name.
+  const ListPage = () => {
+    const [listDetails, setListDetails] = useState<ListDetails | null>(null);
+    const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
+    const { id } = useParams();  // Ensure we are using `id` as the parameter name.
 
-  const fetchListDetails = useCallback(async () => {
+    const fetchListDetails = useCallback(async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const token = Cookies.get('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
       const response = await axios.get(`${apiUrl}/list/${id}`, {
         headers: {
-          Authorization: `Bearer ${Cookies.get('token')}`,
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache'
         },
       });
+
+      const data = response.data;
+      console.log("API Data:", data);
+
+      const movies = data.movies.map((movie: any) => ({
+        id: movie.id,
+        title: movie.title,
+        release_year: movie.release_date,
+        director: movie.director,
+        synopsis: movie.synopsis || '',
+        note_moyenne: movie.note_moyenne || 0,
+        note: movie.note || 0,
+        comment: movie.comment || '',
+      }));
       setListDetails({
-        list_name: response.data.list_name,
-        movies: response.data.Movie.map((movie: any) => ({
-          id: movie.id,
-          title: movie.title,
-          release_year: movie.release_date,
-          director: movie.director,
-          synopsis: movie.synopsis,
-          casting: movie.casting,
-          note_moyenne: movie.note_moyenne,
-        })),
+        list_name: data.list_name || 'Unnamed List',
+        movies: movies || [],
       });
     } catch (err: any) {
       console.error('Error fetching list details:', err);
       setError(err.response?.data?.message || 'Failed to fetch list details');
     }
   }, [id]);
+
 
   const fetchSimilarMovies = useCallback(async () => {
     if (!id) {
@@ -86,6 +99,8 @@ const ListPage = () => {
       await axios.delete(`${apiUrl}/list/${id}/remove_movie`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
+          'Cache-Control': 'no-cache'
+
         },
         data: { movie_id: movieId },
       });
@@ -103,6 +118,11 @@ const ListPage = () => {
     }
   }, [id, fetchListDetails]);
 
+  useEffect(() => {
+    console.log("List Details:", listDetails);
+  }, [listDetails]);
+
+
   const handleSimilarMovieClick = (movieId: number) => {
     router.push(`/movies/${movieId}`);
   };
@@ -117,16 +137,24 @@ const ListPage = () => {
             <h1 className="text-2xl font-bold mb-4 text-center">{listDetails.list_name}</h1>
             <ul className="space-y-2">
               {listDetails.movies.map((movie) => (
-                <li key={movie.id} className="flex justify-between items-center bg-white p-4 rounded shadow">
-                  <span className="cursor-pointer text-blue-500 hover:underline" onClick={() => router.push(`/movies/${movie.id}`)}>
-                    {movie.title} ({movie.release_year})
-                  </span>
-                  <button
-                    onClick={() => removeMovieFromList(movie.id)}
-                    className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-700"
-                  >
-                    Remove
-                  </button>
+                <li key={movie.id} className="flex flex-col bg-white p-4 rounded shadow">
+                  <div className="flex justify-between items-center">
+                    <span className="cursor-pointer text-blue-500 hover:underline" onClick={() => router.push(`/movies/${movie.id}`)}>
+                      {movie.title} ({movie.release_year})
+                    </span>
+                    <button
+                      onClick={() => removeMovieFromList(movie.id)}
+                      className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  {movie.note !== undefined && movie.note !== null && (
+                    <div className="mt-2">
+                      <p>Rating: {movie.note}</p>
+                      <p>Comment: {movie.comment}</p>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

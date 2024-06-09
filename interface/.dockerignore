@@ -1,24 +1,30 @@
-# Ignorer les fichiers de configuration
-*.env
+# Ignore les fichiers de versionnement
+.git
+.gitignore
 
-# Ignorer les fichiers et répertoires de logs
+# Ignore les fichiers de log
 *.log
-logs/
-log/
 
-# Ignorer les fichiers de compilation
-*.class
-*.o
-*.so
-*.dll
-
-# Ignorer les répertoires spécifiques
+# Ignore les fichiers temporaires et de cache
 node_modules/
-dist/
-build/
-
-# Ignorer les fichiers temporaires
-*.tmp
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
 *.swp
+*~
 *.bak
+
+# Ignore les fichiers de configuration de l'éditeur
+.vscode/
+.idea/
+*.sublime*
+
+# Ignore les répertoires de build locaux
+build/
+dist/
+.next/
+
+# Ignore les fichiers spécifiques à Docker
+Dockerfile
+.dockerignore
 
