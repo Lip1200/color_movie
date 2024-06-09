@@ -1,4 +1,5 @@
 import os
+import logging
 from flask import Flask, jsonify, request, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required
@@ -39,6 +40,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from flask_cors import CORS
 from contextlib import contextmanager
 
+
 # Configuration de la base de données MySQL
 engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
 Session = sessionmaker(bind=engine)
@@ -50,8 +52,21 @@ collection = chroma_client.get_or_create_collection(name="Movie", metadata={"hns
 # Création de l'application app
 app = create_app()
 
-login_manager = LoginManager()
-login_manager.init_app(app)
+# Configuration de la journalisation
+app.config['DEBUG'] = True
+app.logger.setLevel(logging.DEBUG)
+
+# Création du gestionnaire de journalisation
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+
+# Format des messages de journalisation
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+handler.setFormatter(formatter)
+
+# Ajout du gestionnaire à l'application
+app.logger.addHandler(handler)
+
 admin = Admin(app, template_mode='bootstrap3')
 db.init_app(app)
 bcrypt = Bcrypt(app)
@@ -72,10 +87,6 @@ def session_scope():
     finally:
         session.close()
 
-
-@login_manager.user_loader
-def load_user(user_id):
-    return Utilisateur.query.get(int(user_id))
 
 
 @app.route('/login', methods=['POST'])
@@ -125,37 +136,43 @@ def get_movies():
 @jwt_required()
 def get_list_details(list_id):
     with session_scope() as session:
+        liste = session.query(Liste).filter(Liste.id == list_id).one_or_none()
+        if not liste:
+            return jsonify({'message': 'List not found'}), 404
+
         list_details = session.query(
-            Liste.nom_liste.label('list_name'),
             Metrage.id.label('movie_id'),
             Metrage.titre.label('movie_title'),
             Metrage.annee.label('release_date'),
-            Personne.nom.label('director_name')
+            Personne.nom.label('director_name'),
+            Critique.note.label('note'),
+            Critique.commentaire.label('comment')
         ).join(
-            EntreeListe, Liste.id == EntreeListe.id_liste
-        ).join(
-            Metrage, EntreeListe.id_metrage == Metrage.id
+            EntreeListe, EntreeListe.id_metrage == Metrage.id
         ).join(
             Credit, (Metrage.id == Credit.id_metrage) & (Credit.fonction == 'Director')
         ).join(
             Personne, Credit.id_personne == Personne.id
+        ).outerjoin(
+            Critique, (Metrage.id == Critique.id_metrage) & (EntreeListe.id_liste == list_id) & (Critique.id_utilisateur == liste.id_utilisateur)
         ).filter(
-            Liste.id == list_id
+            EntreeListe.id_liste == list_id
         ).all()
 
         if not list_details:
             return jsonify({
-                'list_name': '',
-                'Movie': []
+                'list_name': liste.nom_liste,
+                'movies': []
             })
 
         data = {
-            'list_name': list_details[0].list_name,
-            'Movie': [{'id': result.movie_id, 'title': result.movie_title, 'release_date': result.release_date,
-                       'director': result.director_name} for result in list_details]
+            'list_name': liste.nom_liste,
+            'movies': [{'id': movie.movie_id, 'title': movie.movie_title, 'release_date': movie.release_date,
+                        'director': movie.director_name, 'note': movie.note, 'comment': movie.comment} for movie in list_details]
         }
 
         return jsonify(data)
+
 
 
 @app.route('/user/<int:user_id>/ratings', methods=['GET'])
@@ -173,15 +190,26 @@ def get_ratings(user_id):
 def get_lists(user_id):
     with session_scope() as session:
         try:
-            lists = get_user_list_ids(session, user_id)
+            lists = session.query(Liste).filter_by(id_utilisateur=user_id).all()
             if not lists:
                 return jsonify([])
 
-            lists_data = [{'list_id': list_id, 'list_name': list_name} for list_id, list_name in lists]
+            lists_data = []
+            for lst in lists:
+                movie_count = session.query(EntreeListe).filter_by(id_liste=lst.id).count()
+                lists_data.append({
+                    'list_id': lst.id,
+                    'list_name': lst.nom_liste,
+                    'is_empty': movie_count == 0
+                })
+
+            current_app.logger.debug(f"User lists data: {lists_data}")
             return jsonify(lists_data)
         except Exception as e:
             current_app.logger.error(f"Error getting user lists: {str(e)}")
             return jsonify({"error": str(e)}), 500
+
+
 
 
 @app.route('/similar_movies/<int:movie_id>', methods=['GET'])
@@ -304,31 +332,39 @@ def create_list():
 @jwt_required()
 def add_movie_to_list(list_id):
     data = request.get_json()
+    current_app.logger.debug(f"Received data: {data}")
+    user_identity = get_jwt_identity()
+    user_id = user_identity['user_id']
+
     movie_id = data.get('movie_id')
     note = data.get('note')
     comment = data.get('comment')
 
-    current_app.logger.debug(f"Received data: {data}")
-
     if not movie_id or note is None:
+        current_app.logger.error(f"Missing movie_id or note: movie_id={movie_id}, note={note}")
         return jsonify({'error': 'Movie ID and rating are required.'}), 400
 
     with session_scope() as session:
         movie = session.get(Metrage, movie_id)
         liste = session.get(Liste, list_id)
-        if not movie:
-            current_app.logger.error(f"Movie not found: {movie_id}")
-            return jsonify({'error': 'Movie not found.'}), 404
+        if not movie or not liste:
+            error_message = 'Movie not found.' if not movie else 'List not found.'
+            current_app.logger.error(f"{error_message} ID: {movie_id if not movie else list_id}")
+            return jsonify({'error': error_strings}), 404
 
-        list_entry = EntreeListe(id_liste=list_id, id_metrage=movie.id)
-        critique = Critique(id_utilisateur=liste.id_utilisateur, id_metrage=movie.id, note=note, commentaire=comment)
-        session.add(list_entry)
-        session.add(critique)
+        critique = session.query(Critique).filter_by(id_metrage=movie_id, id_utilisateur=user_id).first()
+        if critique:
+            critique.note = note
+            critique.commentaire = comment
+        else:
+            critique = Critique(id_utilisateur=user_id, id_metrage=movie_id, note=note, commentaire=comment)
+            session.add(critique)
+            list_entry = EntreeListe(id_liste=list_id, id_metrage=movie_id)
+            session.add(list_entry)
+
         session.commit()
-
-        current_app.logger.debug(f"Movie {movie_id} added to list {list_id}")
-
-        return jsonify({'message': 'Movie added to list.'}), 201
+        current_app.logger.debug(f"Movie {movie_id} added to list {list_id} with new/updated critique.")
+        return jsonify({'message': 'Movie added to list with new/updated critique.'}), 201
 
 
 @app.route('/search_movies', methods=['GET'])
@@ -373,6 +409,7 @@ def after_request(response):
     response.headers["Access-Control-Allow-Origin"] = "http://localhost:3000"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,Cache-Control"
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
 
@@ -438,4 +475,4 @@ def get_movie_details(movie_id):
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True, port=5001)
+    app.run(host='flask', debug=True, port=5001)
