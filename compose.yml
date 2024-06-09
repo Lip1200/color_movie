@@ -27,8 +27,8 @@ services:
       - SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:REDACTED@db/MovieDb
       - CHROMADB_URI=http://chromadb:8000
       - CHROMADB_STORAGE_DIR=/vec_data
-    env_file:
-      - .env
+    #env_file:
+    #  - .env
     volumes:
       - ./app:/app
     ports:
