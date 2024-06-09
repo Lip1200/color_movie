@@ -2,7 +2,7 @@ import os
 import logging
 from flask import Flask, jsonify, request, current_app
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager, jwt_required
+#from flask_jwt_extended import JWTManager, jwt_required
 from flask_login import LoginManager
 from flask_admin import Admin
 from datetime import datetime, timedelta
@@ -100,7 +100,7 @@ def login():
     if user and bcrypt.check_password_hash(user.mot_de_passe, password):
         access_token = create_access_token(identity={'user_id': user.id, 'is_admin': user.is_admin},
                                            expires_delta=timedelta(hours=24))
-        return jsonify({'token': access_token, 'user_id': user.id})
+        return jsonify({'token': access_token, 'user_id': user.id}), 200
 
     return jsonify({'message': 'Invalid credentials'}), 401
 
