@@ -1,5 +1,4 @@
-# Étape 1 : Builder
-FROM ubuntu:22.04 AS builder
+FROM ubuntu:22.04
 
 # Installer les dépendances nécessaires
 RUN apt-get update && \
@@ -20,6 +19,7 @@ RUN apt-get update && \
 RUN pip3 install --upgrade pip setuptools
 RUN pip3 install numpy
 
+
 # Créer et définir le répertoire de travail
 RUN mkdir /app
 WORKDIR /app
@@ -33,22 +33,6 @@ RUN pip3 install -r requirements.txt
 # Copier le reste de l'application
 COPY . /app
 
-# Étape 2 : Image finale basée sur scratch
-FROM scratch
-
-# Copier Python et les bibliothèques nécessaires depuis l'étape de construction
-COPY --from=builder /usr/bin/python3 /usr/bin/python3
-COPY --from=builder /usr/lib /usr/lib
-COPY --from=builder /lib /lib
-COPY --from=builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
-
-# Copier l'application Flask
-COPY --from=builder /app /app
-
-# Définir le répertoire de travail
-WORKDIR /app
-
 # Définir le point d'entrée de l'application
-ENTRYPOINT ["/usr/bin/python3"]
+ENTRYPOINT ["python3"]
 CMD ["app.py"]
-
