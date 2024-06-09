@@ -8,6 +8,8 @@ RUN npm install
 
 COPY . .
 
+ENV NEXT_PUBLIC_API_URL=http://localhost:5001
+
 # Construire l'application Next.js
 RUN npm run build
 

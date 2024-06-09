@@ -28,6 +28,7 @@ services:
       - FLASK_ENV=development
       - SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:REDACTED@db/MovieDb
       - CHROMADB_URI=http://chromadb:8000
+      - JWT_SECRET_KEY="b'\xc6\x91)\xc3\x00\xeb\x06c:\xdc\xe0\xd6-\x1a7I<\x13aM\xe24l\xe8'"
       - CHROMADB_STORAGE_DIR=/vec_data
     #env_file:
     #  - .env
