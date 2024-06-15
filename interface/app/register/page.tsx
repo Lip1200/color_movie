@@ -17,7 +17,7 @@ const RegisterPage = () => {
     setError('');
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.post(`${apiUrl}/register_user`, { name, email, password });
 
       if (response.status === 200) {

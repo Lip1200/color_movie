@@ -4,7 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import Header from '@/components/Header'; // Ajustez le chemin si nécessaire
+import Header from '@/components/Header';
+
 
 const AddMovieForm = () => {
   const router = useRouter();
@@ -31,9 +32,9 @@ const AddMovieForm = () => {
         setError('No token found. Please login.');
         return;
       }
-
+      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL
       const response = await axios.post(
-        `http://localhost:5001/list/${list_id}/add_movie`,
+        `${apiUrl}/list/${list_id}/add_movie`,
         payload,
         {
           headers: {

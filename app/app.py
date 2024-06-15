@@ -401,12 +401,11 @@ def delete_list(list_id):
             return jsonify({'error': 'Failed to delete Lists'}), 500
 
 
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
-
-
+#CORS(app, resources={r"/*": {"origins": os.getenv("AUTHORIZED_ORIGIN")}}, supports_credentials=True)
+CORS(app, ressources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 @app.after_request
 def after_request(response):
-    response.headers["Access-Control-Allow-Origin"] = "http://localhost:3000"
+    response.headers["Access-Control-Allow-Origin"] = "http://localhost:3000" #os.getenv("AUTHORIZED_ORIGIN")
     response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,Cache-Control"
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
     response.headers["Access-Control-Allow-Credentials"] = "true"
@@ -475,4 +474,4 @@ def get_movie_details(movie_id):
 
 
 if __name__ == '__main__':
-    app.run(host='flask', debug=True, port=5001)
+    app.run(host='0.0.0.0', debug=True, port=5001)

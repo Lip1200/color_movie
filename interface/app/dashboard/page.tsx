@@ -36,7 +36,7 @@ const Dashboard = () => {
         return;
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
 
       let res = await axios({
         url: `${apiUrl}/user/${user_id}/details`,
@@ -78,7 +78,7 @@ const Dashboard = () => {
 
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/search_movies`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
@@ -124,10 +124,7 @@ const Dashboard = () => {
             <button onClick={handleUserClick} className="text-blue-500 underline mr-4">
               {userName}
             </button>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-700"
-            >
+            <button onClick={handleLogout} className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-700">
               Logout
             </button>
           </div>
