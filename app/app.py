@@ -475,4 +475,4 @@ def get_movie_details(movie_id):
 
 
 if __name__ == '__main__':
-    app.run(host='flask', debug=True, port=5001)
+    app.run(host=os.getenv('HOST'), debug=True, port=5001)
