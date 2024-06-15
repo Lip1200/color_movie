@@ -38,7 +38,7 @@ const UserPageContent = () => {
     }
 
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/user/${userId}/lists`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
@@ -70,7 +70,7 @@ const UserPageContent = () => {
     }
 
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/search_movies`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
@@ -86,7 +86,7 @@ const UserPageContent = () => {
 
   const handleCreateList = async () => {
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       await axios.post(
         `${apiUrl}/lists`,
         { name: newListName },
@@ -112,7 +112,7 @@ const UserPageContent = () => {
     }
 
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       await axios.post(
         `${apiUrl}/list/${selectedListId}/add_movie`,
         { movie_id: movieId },
@@ -142,7 +142,7 @@ const UserPageContent = () => {
 
   const handleDeleteList = async (listId: number) => {
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       await axios.delete(`${apiUrl}/list/${listId}`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,

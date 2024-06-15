@@ -31,7 +31,7 @@ const MoviePage = () => {
 
   const fetchMovie = useCallback(async () => {
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/movies/${id}`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
@@ -46,7 +46,7 @@ const MoviePage = () => {
 
   const fetchUserLists = useCallback(async () => {
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/user_lists`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
@@ -61,7 +61,7 @@ const MoviePage = () => {
 
   const fetchSimilarMovies = useCallback(async () => {
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/similar_movies/${id}`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,

@@ -31,7 +31,7 @@ interface ListDetails {
 
     const fetchListDetails = useCallback(async () => {
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const token = Cookies.get('token');
       if (!token) {
         throw new Error('No token found');
@@ -73,7 +73,7 @@ interface ListDetails {
       return;
     }
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/list/${id}/similar_movies`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
@@ -95,7 +95,7 @@ interface ListDetails {
 
   const removeMovieFromList = async (movieId: number) => {
     try {
-      const apiUrl = 'http://localhost:5001'// process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       await axios.delete(`${apiUrl}/list/${id}/remove_movie`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
