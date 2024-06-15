@@ -14,10 +14,10 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError(''); // Reset error message
+    setError('');
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.post(`${apiUrl}/login`, { email, password });
 
       if (response.status === 200) {

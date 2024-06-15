@@ -3,12 +3,14 @@ services:
     build:
       context: ./interface
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5001
     environment:
-      - NEXT_PUBLIC_API_URL=flask:5001
-    volumes:
-      - ./interface:/app
-      - node_cache:/app/node_modules
-      - next_cache:/app/.next
+      - NEXT_PUBLIC_API_URL='http://localhost:5001'
+#    volumes:
+#      - ./interface:/app
+#      - node_cache:/app/node_modules
+#      - next_cache:/app/.next
     ports:
       - "3000:3000"
     depends_on:
@@ -22,7 +24,6 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-    container_name: flask
     restart: always
     environment:
       - FLASK_ENV=development
@@ -80,8 +81,8 @@ services:
 
 volumes:
   db:
-  node_cache:
-  next_cache:
+#  node_cache:
+#  next_cache:
 
 networks:
   app_network:
