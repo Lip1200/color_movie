@@ -13,33 +13,43 @@ const LoginPage: React.FC = () => {
   const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError('');
+  event.preventDefault();
+  setError('');
 
-    try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
-      const response = await axios.post(`${apiUrl}/login`, { email, password });
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    console.log('API URL:', apiUrl); // Log API URL
+    const response = await axios.post(
+      `${apiUrl}/login`,
+      { email, password },
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    console.log('Response:', response); // Log Response
 
-      if (response.status === 200) {
-        Cookies.set('token', response.data.token, { expires: 1 }); // Expires in 1 day
-        Cookies.set('user_id', response.data.user_id, { expires: 1 }); // Expires in 1 day
-        router.push('/user');
-      } else {
-        setError('Login failed. Please check your credentials.');
-      }
-    } catch (err: any) {
-      if (err.response) {
-        // The request was made and the server responded with a status code outside of the range of 2xx
-        setError('Login failed. Please check your credentials.');
-      } else if (err.request) {
-        // The request was made but no response was received
-        setError('No response from the server. Please try again later.');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        setError('An unexpected error occurred. Please try again.');
-      }
+    if (response.status === 200) {
+      Cookies.set('token', response.data.token, { expires: 1 }); // Expires in 1 day
+      Cookies.set('user_id', response.data.user_id, { expires: 1 }); // Expires in 1 day
+      router.push('/user');
+    } else {
+      setError('Login failed. Please check your credentials.');
     }
-  };
+  } catch (err: any) {
+    console.error('Error:', err); // Log Error
+    if (err.response) {
+      setError('Login failed. Please check your credentials.');
+    } else if (err.request) {
+      setError('No response from the server. Please try again later.');
+    } else {
+      setError('An unexpected error occurred. Please try again.');
+    }
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

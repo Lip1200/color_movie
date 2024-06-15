@@ -32,7 +32,7 @@ const AddMovieForm = () => {
         setError('No token found. Please login.');
         return;
       }
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.post(
         `${apiUrl}/list/${list_id}/add_movie`,
         payload,

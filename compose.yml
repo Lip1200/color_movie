@@ -1,16 +1,8 @@
 services:
   nextjs:
-    build:
-      context: ./interface
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: http://localhost:5001
+    image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/nextjs:x86_64
     environment:
-      - NEXT_PUBLIC_API_URL='http://localhost:5001'
-#    volumes:
-#      - ./interface:/app
-#      - node_cache:/app/node_modules
-#      - next_cache:/app/.next
+      NEXT_PUBLIC_API_URL: color-movie-flask:5001
     ports:
       - "3000:3000"
     depends_on:
@@ -21,20 +13,14 @@ services:
       - 3000
 
   flask:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
+    image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/flask:x86_64
     restart: always
     environment:
-      - FLASK_ENV=development
-      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:REDACTED@db/MovieDb
-      - CHROMADB_URI=http://chromadb:8000
-      - JWT_SECRET_KEY="b'\xc6\x91)\xc3\x00\xeb\x06c:\xdc\xe0\xd6-\x1a7I<\x13aM\xe24l\xe8'"
-      - CHROMADB_STORAGE_DIR=/vec_data
-    #env_file:
-    #  - .env
-    volumes:
-      - ./app:/app
+      AUTHORIZED_ORIGIN: "nextjs:3000"
+      CHROMADB_URI: chromadb
+      CHROMADB_STORAGE_DIR: /vec_data
+      SQLALCHEMY_DATABASE_URI: mysql+pymysql://movienotes:REDACTED@db/MovieDb
+      HOST: flask
     ports:
       - "5001:5001"
     depends_on:
@@ -44,7 +30,7 @@ services:
       - app_network
 
   db:
-    image: mysql
+    image: mariadb
     restart: always
     environment:
       MYSQL_DATABASE: REDACTED
@@ -52,12 +38,8 @@ services:
       MYSQL_PASSWORD: REDACTED
       MYSQL_ROOT_PASSWORD: REDACTED
     volumes:
-      - ./MovieDb.sql:/docker-entrypoint-initdb.d/MovieDb.sql
+      - /home/Lip/g4/MovieDb.sql:/docker-entrypoint-initdb.d/MovieDb.sql
       - db:/var/lib/mysql
-    ports:
-      - "3306:3306"
-    expose:
-      - 3306
     networks:
       - app_network
 
@@ -67,22 +49,17 @@ services:
     environment:
       CHROMADB_STORAGE_DIR: /vec_data
     volumes:
-      - ./vec_data:/chroma/chroma
+      - /home/Lip/g4/vec_data:/chroma/chroma
     ulimits:
       nofile:
         soft: 1048576
         hard: 1048576
-    ports:
-      - "8000:8000"
-    expose:
-      - 8000
     networks:
       - app_network
 
 volumes:
   db:
-#  node_cache:
-#  next_cache:
+  chromadb:
 
 networks:
   app_network:

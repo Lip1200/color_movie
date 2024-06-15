@@ -36,7 +36,7 @@ const Dashboard = () => {
         return;
       }
 
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
       let res = await axios({
         url: `${apiUrl}/user/${user_id}/details`,
@@ -78,7 +78,7 @@ const Dashboard = () => {
 
     setLoading(true);
     try {
-      const apiUrl = 'http://localhost:5001'; //process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await axios.get(`${apiUrl}/search_movies`, {
         headers: {
           Authorization: `Bearer ${Cookies.get('token')}`,
