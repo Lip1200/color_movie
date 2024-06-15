@@ -13,43 +13,33 @@ const LoginPage: React.FC = () => {
   const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent) => {
-  event.preventDefault();
-  setError('');
+    event.preventDefault();
+    setError(''); // Reset error message
 
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    console.log('API URL:', apiUrl); // Log API URL
-    const response = await axios.post(
-      `${apiUrl}/login`,
-      { email, password },
-      {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.post(`${apiUrl}/login`, { email, password });
+
+      if (response.status === 200) {
+        Cookies.set('token', response.data.token, { expires: 1 }); // Expires in 1 day
+        Cookies.set('user_id', response.data.user_id, { expires: 1 }); // Expires in 1 day
+        router.push('/user');
+      } else {
+        setError('Login failed. Please check your credentials.');
       }
-    );
-    console.log('Response:', response); // Log Response
-
-    if (response.status === 200) {
-      Cookies.set('token', response.data.token, { expires: 1 }); // Expires in 1 day
-      Cookies.set('user_id', response.data.user_id, { expires: 1 }); // Expires in 1 day
-      router.push('/user');
-    } else {
-      setError('Login failed. Please check your credentials.');
+    } catch (err: any) {
+      if (err.response) {
+        // The request was made and the server responded with a status code outside of the range of 2xx
+        setError('Login failed. Please check your credentials.');
+      } else if (err.request) {
+        // The request was made but no response was received
+        setError('No response from the server. Please try again later.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setError('An unexpected error occurred. Please try again.');
+      }
     }
-  } catch (err: any) {
-    console.error('Error:', err); // Log Error
-    if (err.response) {
-      setError('Login failed. Please check your credentials.');
-    } else if (err.request) {
-      setError('No response from the server. Please try again later.');
-    } else {
-      setError('An unexpected error occurred. Please try again.');
-    }
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -68,6 +58,7 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              autoComplete="email"
             />
           </div>
           <div className="mb-6">
@@ -81,6 +72,7 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              autoComplete="current-password"
             />
           </div>
           <div className="flex items-center justify-between">
@@ -91,9 +83,9 @@ const LoginPage: React.FC = () => {
               Login
             </button>
             <Link href="/register">
-              <a className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
+              <div className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800 cursor-pointer">
                 Register here
-              </a>
+              </div>
             </Link>
           </div>
         </form>
