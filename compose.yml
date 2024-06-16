@@ -2,7 +2,7 @@ services:
   nextjs:
     image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/nextjs:x86_64
     environment:
-      NEXT_PUBLIC_API_URL: color-movie-flask:5001
+      NEXT_PUBLIC_API_URL: http://flask:5001
     ports:
       - "3000:3000"
     depends_on:
@@ -12,15 +12,18 @@ services:
     expose:
       - 3000
 
+
   flask:
     image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/flask:x86_64
     restart: always
     environment:
-      AUTHORIZED_ORIGIN: "nextjs:3000"
+      AUTHORIZED_ORIGIN: '*'
       CHROMADB_URI: chromadb
       CHROMADB_STORAGE_DIR: /vec_data
       SQLALCHEMY_DATABASE_URI: mysql+pymysql://movienotes:filipe@db/MovieDb
+      JWT_SECRET_KEY: "v3ry_s3cr3t_k3y"
       HOST: flask
+
     ports:
       - "5001:5001"
     depends_on:

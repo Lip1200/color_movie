@@ -8,7 +8,6 @@ RUN npm install
 
 COPY . .
 
-ARG NEXT_PUBLIC_API_URL=flask:5001
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Construire l'application Next.js
