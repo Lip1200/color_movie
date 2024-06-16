@@ -1,34 +1,42 @@
 services:
   nextjs:
-    image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/nextjs:x86_64
+    image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/nextjs:amd64
     environment:
-      NEXT_PUBLIC_API_URL: http://flask:5001
+      NEXT_PUBLIC_API_URL: http://nginx
     ports:
       - "3000:3000"
     depends_on:
       - flask
+      - nginx
     networks:
       - app_network
     expose:
       - 3000
 
-
   flask:
-    image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/flask:x86_64
+    image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/flask:amd64
     restart: always
     environment:
-      AUTHORIZED_ORIGIN: '*'
+      AUTHORIZED_ORIGIN: 'http://10.25.10.22:3000'
       CHROMADB_URI: chromadb
       CHROMADB_STORAGE_DIR: /vec_data
       SQLALCHEMY_DATABASE_URI: mysql+pymysql://movienotes:REDACTED@db/MovieDb
       JWT_SECRET_KEY: "v3ry_s3cr3t_k3y"
       HOST: flask
-
     ports:
       - "5001:5001"
     depends_on:
       - db
       - chromadb
+    networks:
+      - app_network
+
+  nginx:
+    image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/cors:latest
+    ports:
+      - "8090:80"
+    depends_on:
+      - flask
     networks:
       - app_network
 
@@ -62,7 +70,6 @@ services:
 
 volumes:
   db:
-  chromadb:
 
 networks:
   app_network:

@@ -1,16 +1,23 @@
 import { ReactNode } from 'react';
 import './globals.css';
+import { Roboto } from 'next/font/google';
+
+// Use next/font to optimize font loading
+const roboto = Roboto({
+  weight: ['400', '500', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 const RootLayout = ({ children }: { children: ReactNode }) => {
   return (
-    <html lang="en">
+    <html lang="fr">
       <head>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
-        />
+        {/* metadatas pour seo*/}
       </head>
-      <body>{children}</body>
+      <body className={roboto.className}>
+        {children}
+      </body>
     </html>
   );
 };
