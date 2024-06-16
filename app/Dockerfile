@@ -44,5 +44,4 @@ ENV AUTHORIZED_ORIGIN=$AUTHORIZED_ORIGIN
 EXPOSE 5001
 
 # Définir le point d'entrée de l'application
-ENTRYPOINT ["python3"]
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "app:app"]
+ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:5001", "app:app"]
