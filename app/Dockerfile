@@ -29,22 +29,20 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 
 # Installer les dépendances Python
-RUN pip3 install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copier le reste de l'application
 COPY . /app
 
-ARG SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:REDACTED@db/MovieDb
 ENV SQLALCHEMY_DATABASE_URI=$SQLALCHEMY_DATABASE_URI
-ARG CHROMADB_URI=chromadb:8000
 ENV CHROMADB_URI=$CHROMADB_URI
-ARG JWT_SECRET_KEY="b'\xc6\x91)\xc3\x00\xeb\x06c:\xdc\xe0\xd6-\x1a7I<\x13aM\xe24l\xe8'"
 ENV JWT_SECRET_KEY=$JWT_SECRET_KEY
-ARG CHROMADB_STORAGE_DIR=/vec_data
 ENV CHROMADB_STORAGE_DIR=$CHROMADB_STORAGE_DIR
-ARG HOST='flask'
 ENV HOST=$HOST
+ENV AUTHORIZED_ORIGIN=$AUTHORIZED_ORIGIN
+
+EXPOSE 5001
 
 # Définir le point d'entrée de l'application
 ENTRYPOINT ["python3"]
-CMD ["app.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "app:app"]

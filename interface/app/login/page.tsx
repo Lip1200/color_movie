@@ -18,6 +18,11 @@ const LoginPage: React.FC = () => {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        throw new Error("API URL is not defined");
+      }
+      console.log('API URL:', apiUrl);
+
       const response = await axios.post(`${apiUrl}/login`, { email, password });
 
       if (response.status === 200) {
@@ -28,14 +33,12 @@ const LoginPage: React.FC = () => {
         setError('Login failed. Please check your credentials.');
       }
     } catch (err: any) {
+      console.error('Error:', err); // Log the error for debugging
       if (err.response) {
-        // The request was made and the server responded with a status code outside of the range of 2xx
         setError('Login failed. Please check your credentials.');
       } else if (err.request) {
-        // The request was made but no response was received
         setError('No response from the server. Please try again later.');
       } else {
-        // Something happened in setting up the request that triggered an Error
         setError('An unexpected error occurred. Please try again.');
       }
     }
@@ -44,7 +47,7 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h1 className="login-title mb-6 text-center">Login</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -58,7 +61,6 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              autoComplete="email"
             />
           </div>
           <div className="mb-6">
@@ -72,20 +74,19 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              autoComplete="current-password"
             />
           </div>
           <div className="flex items-center justify-between">
             <button
               type="submit"
-              className="btn-primary"
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             >
               Login
             </button>
-            <Link href="/register">
-              <div className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800 cursor-pointer">
+            <Link href="/register" legacyBehavior>
+              <a className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
                 Register here
-              </div>
+              </a>
             </Link>
           </div>
         </form>

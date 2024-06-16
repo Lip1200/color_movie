@@ -72,6 +72,9 @@ handler.setFormatter(formatter)
 # Ajout du gestionnaire à l'application
 app.logger.addHandler(handler)
 
+CORS(app, resources={r"/*": {"origins": os.getenv("AUTHORIZED_ORIGIN")}}, supports_credentials=True)
+
+
 admin = Admin(app, template_mode='bootstrap3')
 db.init_app(app)
 bcrypt = Bcrypt(app)
@@ -405,8 +408,6 @@ def delete_list(list_id):
             current_app.logger.error(f'Error deleting Lists: {e}')
             return jsonify({'error': 'Failed to delete Lists'}), 500
 
-
-CORS(app, resources={r"/*": {"origins": os.getenv("AUTHORIZED_ORIGIN")}}, supports_credentials=True)
 
 @app.after_request
 def after_request(response):
