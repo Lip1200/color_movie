@@ -61,11 +61,16 @@ def find_similar_movies_by_id(collection, movie_id, top_n=5):
     current_app.logger.debug(f"Query vector for movie ID {movie_id}: {query_vector}")
 
     # Effectue une requête pour trouver les films les plus similaires
-    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(collection, query_vector, top_n)
+    similar_movie_ids, similar_movie_distances = find_similar_movies_by_vec(collection, query_vector, top_n + 1)
     current_app.logger.debug(f"Similar movie IDs: {similar_movie_ids}, distances: {similar_movie_distances}")
 
-    # Retourne les IDs et les distances des films similaires
-    return similar_movie_ids, similar_movie_distances
+    # Exclure le film recherché des résultats
+    filtered_movie_ids = [mid for mid in similar_movie_ids if int(mid) != movie_id]
+    filtered_distances = [similar_movie_distances[i] for i in range(len(similar_movie_ids)) if int(similar_movie_ids[i]) != movie_id]
+
+    # Limiter les résultats au nombre demandé (top_n)
+    return filtered_movie_ids[:top_n], filtered_distances[:top_n]
+
 
 
 def find_similar_movies_by_list_id(session, collection, list_id, top_n=5):
