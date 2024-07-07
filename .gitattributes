@@ -1,0 +1,2 @@
+vec_data/chroma.sqlite3 filter=lfs diff=lfs merge=lfs -text
+vec_data/bd2e7bfb-ea54-4f08-af90-33b4e9e04058/data_level0.bin filter=lfs diff=lfs merge=lfs -text
