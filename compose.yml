@@ -17,12 +17,23 @@ services:
     image: registry.gitlab.unige.ch/courses1/pt1/2324/g4/flask:amd64
     restart: always
     environment:
+<<<<<<< HEAD
       AUTHORIZED_ORIGIN: 'http://10.25.10.22:3000'
       CHROMADB_URI: chromadb
       CHROMADB_STORAGE_DIR: /vec_data
       SQLALCHEMY_DATABASE_URI: mysql+pymysql://movienotes:filipe@db/MovieDb
       JWT_SECRET_KEY: "v3ry_s3cr3t_k3y"
       HOST: flask
+=======
+      - FLASK_ENV=development
+      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://movienotes:filipe@db/MovieDb
+      - CHROMADB_URI=http://chromadb:8000
+      - CHROMADB_STORAGE_DIR=/vec_data
+    #env_file:
+    #  - .env
+    volumes:
+      - ./app:/app
+>>>>>>> parent of 34666f3 (Fix db et variables d'env)
     ports:
       - "5001:5001"
     depends_on:
